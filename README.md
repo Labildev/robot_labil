@@ -12,11 +12,18 @@ Lihat spesifikasi lengkap di [prd_trd_local_ai_automation.md](prd_trd_local_ai_a
 ## Prasyarat Lokal (Semua di dalam Folder Proyek)
 1. **Go 1.23+**
 2. **Ollama portable** di `tools/ollama/ollama.exe` dengan model di `storage/models/` (`qwen2.5:3b`)
-3. **FilmCraft** dan/atau **FFmpeg** di `PATH` untuk rendering video affiliate
-4. *(Opsional)* **Piper TTS** di `tools/piper/piper.exe` + model suara `.onnx` di `storage/models/piper/` untuk voiceover otomatis offline
+3. **FFmpeg portable** di `tools/ffmpeg/ffmpeg.exe` (dan/atau **FilmCraft** di `PATH`) untuk rendering video affiliate
+4. **Piper TTS portable** di `tools/piper/piper.exe` + model suara Indonesia di `storage/models/piper/id_ID-news_tts-medium.onnx`
 5. *(Opsional)* `pdftotext` (Poppler) di `PATH` untuk ekstraksi PDF yang lebih akurat (ada fallback pure-Go bawaan)
 
-## Cara Menjalankan
+## Cara Menjalankan Cepat (1-Klik)
+Klik ganda **`start_mvp.bat`** atau jalankan di PowerShell:
+```powershell
+.\scripts\run_mvp.ps1
+```
+Skrip ini otomatis menyalakan Ollama lokal, membuka browser ke `http://127.0.0.1:8080`, dan menjalankan watcher + serial worker.
+
+## Cara Menjalankan Manual per Perintah
 ```powershell
 # 0. Setup otomatis Ollama portable + model qwen2.5:3b di dalam folder proyek
 .\scripts\setup_ollama.ps1
