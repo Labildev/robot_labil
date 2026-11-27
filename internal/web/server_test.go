@@ -80,10 +80,11 @@ func TestWebDashboardAPIs(t *testing.T) {
 	}
 	h := srv.Handler()
 
-	// 1. Dashboard HTML includes separated Doc Q&A and Affiliate workspaces
+	// 1. Dashboard HTML includes separated Chat, Doc Q&A, Affiliate, and Queue workspaces
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
-	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "view-chat") || !strings.Contains(rec.Body.String(), "view-docs") || !strings.Contains(rec.Body.String(), "view-affiliate") {
+	bodyHTML := rec.Body.String()
+	if rec.Code != http.StatusOK || !strings.Contains(bodyHTML, "view-chat") || !strings.Contains(bodyHTML, "view-docs") || !strings.Contains(bodyHTML, "view-affiliate") || !strings.Contains(bodyHTML, "view-queue") {
 		t.Fatalf("unexpected index response: code=%d", rec.Code)
 	}
 

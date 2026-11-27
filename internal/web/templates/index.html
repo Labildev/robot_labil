@@ -1,73 +1,123 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Robot Labil — 100% Local AI Workspace</title>
+  <title>Robot Labil — 100% Local AI Studio</title>
   <style>
     :root {
-      --bg: #090d14;
-      --sidebar: #0e141f;
-      --surface: #131b29;
-      --surface-2: #192436;
-      --border: #25334a;
-      --text: #eef3fb;
-      --muted: #8da0bd;
+      --bg: #070b12;
+      --bg-glow-1: rgba(56, 189, 248, 0.12);
+      --bg-glow-2: rgba(167, 139, 250, 0.11);
+      --sidebar: rgba(12, 18, 29, 0.92);
+      --surface: rgba(18, 26, 40, 0.88);
+      --surface-solid: #121a28;
+      --surface-2: #1b273b;
+      --border: rgba(148, 163, 184, 0.16);
+      --border-strong: rgba(148, 163, 184, 0.3);
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --chat-accent: #10b981;
       --doc-accent: #38bdf8;
       --aff-accent: #a78bfa;
       --ok: #34d399;
       --warn: #fbbf24;
       --err: #f87171;
-      --shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+      --shadow: 0 18px 40px rgba(0, 0, 0, 0.42);
+      --code-bg: #0b111c;
     }
+    html[data-theme="light"] {
+      --bg: #f1f5f9;
+      --bg-glow-1: rgba(14, 165, 233, 0.12);
+      --bg-glow-2: rgba(139, 92, 246, 0.1);
+      --sidebar: rgba(255, 255, 255, 0.92);
+      --surface: rgba(255, 255, 255, 0.94);
+      --surface-solid: #ffffff;
+      --surface-2: #e2e8f0;
+      --border: rgba(15, 23, 42, 0.1);
+      --border-strong: rgba(15, 23, 42, 0.22);
+      --text: #0f172a;
+      --muted: #475569;
+      --chat-accent: #059669;
+      --doc-accent: #0284c7;
+      --aff-accent: #7c3aed;
+      --ok: #059669;
+      --warn: #d97706;
+      --err: #dc2626;
+      --shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+      --code-bg: #f8fafc;
+    }
+
     * { box-sizing: border-box; }
     html, body { height: 100%; margin: 0; }
     body {
       font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
-      background: radial-gradient(circle at top right, rgba(56,189,248,0.08), transparent 40%),
-                  radial-gradient(circle at bottom left, rgba(167,139,250,0.08), transparent 40%),
-                  var(--bg);
+      background:
+        radial-gradient(800px circle at 85% 8%, var(--bg-glow-1), transparent 55%),
+        radial-gradient(700px circle at 12% 92%, var(--bg-glow-2), transparent 55%),
+        var(--bg);
       color: var(--text);
       display: flex;
       min-height: 100vh;
+      transition: background 0.25s ease, color 0.2s ease;
     }
 
-    /* Sidebar Navigation */
+    ::-webkit-scrollbar { width: 7px; height: 7px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; }
+
+    /* Sidebar */
     .sidebar {
-      width: 260px;
+      width: 274px;
       flex-shrink: 0;
       background: var(--sidebar);
+      backdrop-filter: blur(14px);
       border-right: 1px solid var(--border);
       display: flex;
       flex-direction: column;
-      padding: 20px 14px;
-      gap: 20px;
+      padding: 18px 14px;
+      gap: 18px;
     }
     .brand {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 6px 10px;
+      justify-content: space-between;
+      padding: 4px 8px;
     }
-    .brand-icon {
-      width: 38px;
-      height: 38px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, var(--doc-accent), var(--aff-accent));
+    .brand-left { display: flex; align-items: center; gap: 11px; }
+    .brand-logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--chat-accent), var(--doc-accent) 55%, var(--aff-accent));
       display: grid;
       place-items: center;
-      font-weight: 800;
-      color: #090d14;
-      font-size: 1rem;
+      color: #fff;
+      box-shadow: 0 6px 18px rgba(56, 189, 248, 0.28);
     }
-    .brand-text h1 { margin: 0; font-size: 1.02rem; letter-spacing: 0.2px; }
-    .brand-text span { font-size: 0.75rem; color: var(--muted); }
+    .brand-text h1 { margin: 0; font-size: 1.04rem; font-weight: 700; letter-spacing: -0.01em; }
+    .brand-text span { font-size: 0.74rem; color: var(--muted); display: block; }
 
-    .nav-group { display: flex; flex-direction: column; gap: 6px; }
+    .icon-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: var(--surface-solid);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: transform 0.15s, border-color 0.15s;
+    }
+    .icon-btn:hover { border-color: var(--border-strong); transform: translateY(-1px); }
+
+    .nav-group { display: flex; flex-direction: column; gap: 5px; }
     .nav-label {
-      font-size: 0.72rem;
+      font-size: 0.7rem;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.09em;
       color: var(--muted);
       padding: 4px 10px;
     }
@@ -76,40 +126,43 @@
       align-items: center;
       justify-content: space-between;
       width: 100%;
-      padding: 11px 12px;
+      padding: 10px 12px;
       background: transparent;
       border: 1px solid transparent;
-      border-radius: 10px;
+      border-radius: 11px;
       color: var(--muted);
       cursor: pointer;
-      font-size: 0.92rem;
+      font-size: 0.9rem;
       font-weight: 600;
       text-align: left;
       transition: all 0.16s ease;
     }
-    .nav-btn:hover { background: var(--surface); color: var(--text); }
+    .nav-btn-left { display: flex; align-items: center; gap: 10px; }
+    .nav-btn:hover { background: var(--surface-2); color: var(--text); }
+    .nav-btn.active { color: var(--text); transform: translateX(2px); }
     .nav-btn.active[data-tab="chat"] {
-      background: rgba(52, 211, 153, 0.12);
-      border-color: rgba(52, 211, 153, 0.4);
-      color: var(--ok);
+      background: rgba(16, 185, 129, 0.14);
+      border-color: rgba(16, 185, 129, 0.42);
+      color: var(--chat-accent);
     }
     .nav-btn.active[data-tab="docs"] {
-      background: rgba(56, 189, 248, 0.12);
-      border-color: rgba(56, 189, 248, 0.4);
+      background: rgba(56, 189, 248, 0.14);
+      border-color: rgba(56, 189, 248, 0.42);
       color: var(--doc-accent);
     }
     .nav-btn.active[data-tab="affiliate"] {
-      background: rgba(167, 139, 250, 0.12);
-      border-color: rgba(167, 139, 250, 0.4);
+      background: rgba(167, 139, 250, 0.14);
+      border-color: rgba(167, 139, 250, 0.42);
       color: var(--aff-accent);
     }
     .nav-btn.active[data-tab="queue"] {
-      background: rgba(52, 211, 153, 0.12);
-      border-color: rgba(52, 211, 153, 0.4);
-      color: var(--ok);
+      background: rgba(251, 191, 36, 0.12);
+      border-color: rgba(251, 191, 36, 0.4);
+      color: var(--warn);
     }
     .pill-count {
-      font-size: 0.74rem;
+      font-size: 0.72rem;
+      font-weight: 700;
       padding: 2px 8px;
       border-radius: 999px;
       background: var(--surface-2);
@@ -118,44 +171,43 @@
 
     .sidebar-footer {
       margin-top: auto;
-      padding: 12px;
+      padding: 13px;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: 12px;
       font-size: 0.78rem;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 8px;
     }
     .status-row { display: flex; align-items: center; justify-content: space-between; color: var(--muted); }
-    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+    .status-left { display: flex; align-items: center; gap: 7px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
     .dot.ok { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
     .dot.err { background: var(--err); }
-    .dot.warn { background: var(--warn); }
+    .dot.warn { background: var(--warn); animation: pulse 1.3s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.25); } }
 
-    /* Main Workspace Area */
-    .main-wrap {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
-    }
+    /* Main Wrap & Topbar */
+    .main-wrap { flex: 1; display: flex; flex-direction: column; min-width: 0; }
     .topbar {
-      padding: 14px 24px;
+      padding: 14px 26px;
       border-bottom: 1px solid var(--border);
-      background: rgba(14, 20, 31, 0.85);
-      backdrop-filter: blur(8px);
+      background: var(--sidebar);
+      backdrop-filter: blur(10px);
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 12px;
       flex-wrap: wrap;
     }
-    .topbar-title h2 { margin: 0; font-size: 1.15rem; }
+    .topbar-title h2 { margin: 0; font-size: 1.16rem; font-weight: 700; }
     .topbar-title p { margin: 2px 0 0; font-size: 0.82rem; color: var(--muted); }
+    .topbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .active-worker-pill {
       font-size: 0.8rem;
-      padding: 6px 12px;
+      font-weight: 600;
+      padding: 7px 13px;
       border-radius: 999px;
       border: 1px solid var(--border);
       background: var(--surface);
@@ -164,116 +216,134 @@
       gap: 8px;
     }
 
-    .content {
-      padding: 22px 24px;
-      flex: 1;
-      overflow-y: auto;
-    }
-    .view { display: none; }
+    .content { padding: 22px 26px; flex: 1; overflow-y: auto; }
+    .view { display: none; animation: fadeIn 0.2s ease; }
     .view.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
     .split-grid {
       display: grid;
-      grid-template-columns: 380px 1fr;
+      grid-template-columns: 390px 1fr;
       gap: 20px;
       align-items: start;
     }
     .card {
       background: var(--surface);
+      backdrop-filter: blur(12px);
       border: 1px solid var(--border);
-      border-radius: 14px;
+      border-radius: 16px;
       padding: 18px;
       box-shadow: var(--shadow);
     }
-    .card h3 {
-      margin: 0 0 12px;
+    .card-title {
+      margin: 0 0 14px;
       font-size: 0.98rem;
+      font-weight: 700;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 8px;
     }
 
-    /* Dropzone */
-    .dropzone {
-      border: 1.5px dashed var(--border);
-      border-radius: 12px;
-      padding: 20px 14px;
-      text-align: center;
-      background: rgba(9, 13, 20, 0.55);
-      cursor: pointer;
-      transition: all 0.16s ease;
-    }
-    .dropzone:hover, .dropzone.dragover {
-      border-color: var(--doc-accent);
-      background: rgba(56, 189, 248, 0.08);
-    }
-    .dropzone.aff:hover, .dropzone.aff.dragover {
-      border-color: var(--aff-accent);
-      background: rgba(167, 139, 250, 0.08);
-    }
-    .dropzone p { margin: 0; font-size: 0.88rem; }
-    .dropzone span { font-size: 0.76rem; color: var(--muted); }
-
-    label { display: block; font-size: 0.8rem; color: var(--muted); margin: 12px 0 5px; font-weight: 600; }
-    input, textarea, select {
+    /* Form Controls */
+    label { display: block; font-size: 0.78rem; color: var(--muted); margin: 12px 0 5px; font-weight: 600; }
+    input[type="text"], input[type="number"], textarea, select {
       width: 100%;
       padding: 10px 12px;
-      background: var(--bg);
+      background: var(--code-bg);
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 10px;
       color: var(--text);
       font-size: 0.9rem;
       font-family: inherit;
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
-    input:focus, textarea:focus, select:focus { outline: none; border-color: var(--doc-accent); }
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: var(--doc-accent);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.14);
+    }
+    input[type="range"] { width: 100%; accent-color: var(--aff-accent); cursor: pointer; }
 
     .btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-      padding: 9px 14px;
-      border-radius: 8px;
+      gap: 7px;
+      padding: 9px 15px;
+      border-radius: 10px;
       border: 1px solid transparent;
       cursor: pointer;
       font-weight: 600;
       font-size: 0.86rem;
-      transition: opacity 0.15s;
+      transition: transform 0.12s, opacity 0.15s, border-color 0.15s;
     }
-    .btn:disabled { opacity: 0.55; cursor: wait; }
-    .btn-chat { background: var(--ok); color: #052014; }
-    .btn-doc { background: var(--doc-accent); color: #06131f; }
-    .btn-aff { background: var(--aff-accent); color: #120926; }
+    .btn:hover:not(:disabled) { transform: translateY(-1px); }
+    .btn:active:not(:disabled) { transform: translateY(0); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-chat { background: var(--chat-accent); color: #042014; }
+    .btn-doc { background: var(--doc-accent); color: #061724; }
+    .btn-aff { background: var(--aff-accent); color: #15092b; }
     .btn-ghost { background: var(--surface-2); color: var(--text); border-color: var(--border); }
-    .btn-sm { padding: 5px 10px; font-size: 0.78rem; }
+    .btn-sm { padding: 6px 10px; font-size: 0.78rem; border-radius: 8px; }
 
-    /* Document Library List */
-    .doc-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-top: 12px;
-      max-height: 360px;
-      overflow-y: auto;
+    /* Dropzones */
+    .dropzone {
+      border: 1.5px dashed var(--border-strong);
+      border-radius: 14px;
+      padding: 20px 14px;
+      text-align: center;
+      background: var(--code-bg);
+      cursor: pointer;
+      transition: all 0.18s ease;
     }
+    .dropzone:hover, .dropzone.dragover {
+      border-color: var(--doc-accent);
+      background: rgba(56, 189, 248, 0.09);
+      transform: scale(1.005);
+    }
+    .dropzone.aff:hover, .dropzone.aff.dragover {
+      border-color: var(--aff-accent);
+      background: rgba(167, 139, 250, 0.09);
+    }
+    .dropzone p { margin: 6px 0 2px; font-size: 0.88rem; }
+    .dropzone span { font-size: 0.76rem; color: var(--muted); }
+
+    /* Document List */
+    .doc-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; max-height: 360px; overflow-y: auto; }
     .doc-item {
-      padding: 10px 12px;
-      border-radius: 10px;
-      background: var(--bg);
+      padding: 11px 12px;
+      border-radius: 11px;
+      background: var(--code-bg);
       border: 1px solid var(--border);
       cursor: pointer;
-      transition: border-color 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      transition: border-color 0.15s, background 0.15s;
     }
-    .doc-item:hover { border-color: var(--muted); }
-    .doc-item.active { border-color: var(--doc-accent); background: rgba(56, 189, 248, 0.08); }
-    .doc-item-title { font-size: 0.88rem; font-weight: 600; word-break: break-word; }
-    .doc-item-meta { font-size: 0.75rem; color: var(--muted); margin-top: 3px; }
+    .doc-item:hover { border-color: var(--border-strong); }
+    .doc-item.active { border-color: var(--doc-accent); background: rgba(56, 189, 248, 0.1); }
+    .doc-ext {
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 4px 7px;
+      border-radius: 7px;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--doc-accent);
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .doc-item-info { min-width: 0; flex: 1; }
+    .doc-item-title { font-size: 0.87rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .doc-item-meta { font-size: 0.74rem; color: var(--muted); margin-top: 2px; }
 
-    /* Chat Q&A Workspace */
+    /* Chat Shell & Markdown */
     .chat-shell {
       display: flex;
       flex-direction: column;
-      height: calc(100vh - 155px);
+      height: calc(100vh - 150px);
       min-height: 520px;
     }
     .chat-header {
@@ -291,102 +361,206 @@
       padding: 16px 4px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 14px;
     }
+    .msg-row { display: flex; flex-direction: column; max-width: 86%; gap: 4px; }
+    .msg-row.user { align-self: flex-end; align-items: flex-end; }
+    .msg-row.bot, .msg-row.summary { align-self: flex-start; align-items: flex-start; }
+    .msg-row.summary { max-width: 100%; width: 100%; }
     .bubble {
-      max-width: 86%;
-      padding: 12px 14px;
-      border-radius: 12px;
-      font-size: 0.9rem;
-      white-space: pre-wrap;
-      line-height: 1.55;
+      padding: 12px 15px;
+      border-radius: 14px;
+      font-size: 0.91rem;
+      line-height: 1.58;
+      word-break: break-word;
     }
-    .bubble.user {
-      align-self: flex-end;
-      background: rgba(56, 189, 248, 0.16);
+    .msg-row.user .bubble {
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.22), rgba(16, 185, 129, 0.18));
       border: 1px solid rgba(56, 189, 248, 0.35);
+      border-bottom-right-radius: 4px;
     }
-    .bubble.bot {
-      align-self: flex-start;
-      background: var(--bg);
+    .msg-row.bot .bubble {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+    }
+    .msg-row.summary .bubble {
+      background: rgba(56, 189, 248, 0.06);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      width: 100%;
+    }
+    .msg-actions { display: flex; gap: 6px; opacity: 0.75; }
+    .msg-actions:hover { opacity: 1; }
+    .msg-copy {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 0.72rem;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 5px;
+    }
+    .msg-copy:hover { background: var(--surface-2); color: var(--text); }
+
+    /* Rendered Markdown inside bubbles */
+    .md h1, .md h2, .md h3 { margin: 8px 0 6px; font-size: 0.98rem; color: var(--doc-accent); }
+    .md p { margin: 0 0 8px; }
+    .md p:last-child { margin-bottom: 0; }
+    .md ul { margin: 4px 0 8px 18px; padding: 0; }
+    .md li { margin-bottom: 4px; }
+    .md code {
+      background: var(--surface-2);
+      padding: 1px 5px;
+      border-radius: 5px;
+      font-family: Consolas, monospace;
+      font-size: 0.84em;
+    }
+    .md pre {
+      background: #05080f;
+      color: #e2e8f0;
+      padding: 10px 12px;
+      border-radius: 9px;
+      overflow-x: auto;
+      font-family: Consolas, monospace;
+      font-size: 0.82rem;
       border: 1px solid var(--border);
     }
-    .bubble.summary {
-      max-width: 100%;
-      background: #0b1523;
-      border: 1px solid rgba(56, 189, 248, 0.3);
+
+    /* Thinking Dots */
+    .typing-dots { display: inline-flex; gap: 5px; align-items: center; padding: 4px 2px; }
+    .typing-dots span {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--muted);
+      animation: bounce 1.2s infinite ease-in-out;
     }
-    .chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes bounce { 0%, 80%, 100% { transform: scale(0.7); opacity: 0.45; } 40% { transform: scale(1.1); opacity: 1; } }
+
+    .chip-row { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 10px; }
     .chip {
       font-size: 0.76rem;
-      padding: 5px 10px;
+      padding: 6px 11px;
       border-radius: 999px;
       background: var(--surface-2);
       border: 1px solid var(--border);
       color: var(--text);
       cursor: pointer;
+      transition: all 0.15s;
     }
-    .chip:hover { border-color: var(--doc-accent); }
-    .chat-input-row { display: flex; gap: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+    .chip:hover { border-color: var(--doc-accent); transform: translateY(-1px); }
+    .chat-input-row { display: flex; gap: 10px; padding-top: 10px; border-top: 1px solid var(--border); align-items: flex-end; }
+    .chat-input-row textarea { resize: none; min-height: 44px; max-height: 130px; }
 
-    /* Affiliate Studio */
+    /* Interactive Selling Points & Selected Clips */
+    .tag-input-row { display: flex; gap: 8px; }
+    .pill-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .tag-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 10px; border-radius: 999px;
+      background: rgba(167, 139, 250, 0.14);
+      border: 1px solid rgba(167, 139, 250, 0.35);
+      font-size: 0.78rem; color: var(--text);
+    }
+    .tag-pill button {
+      background: none; border: none; color: var(--muted); cursor: pointer;
+      padding: 0; font-size: 0.9rem; line-height: 1;
+    }
+    .tag-pill button:hover { color: var(--err); }
+
+    .selected-clips { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+    .clip-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 7px 10px; border-radius: 9px;
+      background: var(--code-bg); border: 1px solid var(--border); font-size: 0.8rem;
+    }
+    .clip-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
     .asset-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; max-height: 120px; overflow-y: auto; }
     .asset-chip {
-      font-size: 0.75rem;
-      padding: 4px 9px;
-      border-radius: 6px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      color: var(--muted);
-      cursor: pointer;
+      font-size: 0.75rem; padding: 5px 10px; border-radius: 8px;
+      background: var(--code-bg); border: 1px solid var(--border);
+      color: var(--muted); cursor: pointer; transition: all 0.14s;
     }
     .asset-chip:hover { border-color: var(--aff-accent); color: var(--text); }
-    .studio-preview {
-      display: grid;
-      grid-template-columns: 280px 1fr;
-      gap: 18px;
-      align-items: start;
-      margin-top: 14px;
-    }
+
+    /* Affiliate Studio Preview */
+    .studio-preview { display: grid; grid-template-columns: 270px 1fr; gap: 20px; align-items: start; margin-top: 16px; }
     .phone-frame {
       background: #000;
-      border: 2px solid var(--border);
-      border-radius: 20px;
+      border: 3px solid var(--border-strong);
+      border-radius: 26px;
       overflow: hidden;
       aspect-ratio: 9 / 16;
       display: grid;
       place-items: center;
+      box-shadow: 0 18px 36px rgba(0, 0, 0, 0.5);
     }
     .phone-frame video { width: 100%; height: 100%; object-fit: contain; }
     .copy-card {
-      background: var(--bg);
+      background: var(--code-bg);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 12px;
+      border-radius: 12px;
+      padding: 13px;
       margin-bottom: 10px;
     }
-    .copy-card h4 { margin: 0 0 6px; font-size: 0.78rem; text-transform: uppercase; color: var(--aff-accent); letter-spacing: 0.06em; }
-    .copy-card p { margin: 0; font-size: 0.88rem; white-space: pre-wrap; }
+    .copy-card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .copy-card h4 { margin: 0; font-size: 0.74rem; text-transform: uppercase; color: var(--aff-accent); letter-spacing: 0.07em; }
+    .copy-card p { margin: 0; font-size: 0.88rem; white-space: pre-wrap; line-height: 1.5; }
 
-    /* Queue Table */
-    .filter-bar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    /* Queue KPI & Table */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 16px;
+    }
+    .kpi-card span { font-size: 0.76rem; color: var(--muted); }
+    .kpi-card strong { display: block; font-size: 1.5rem; margin-top: 4px; }
+
+    .filter-bar { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
     table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
     th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
-    th { color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
-    .badge-status {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 0.75rem;
-      font-weight: 700;
-    }
+    th { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .badge-status { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 0.74rem; font-weight: 700; }
     .st-DONE { background: rgba(52,211,153,0.14); color: var(--ok); }
     .st-FAILED { background: rgba(248,113,113,0.14); color: var(--err); }
     .st-PROCESSING { background: rgba(251,191,36,0.14); color: var(--warn); }
     .st-QUEUED { background: rgba(56,189,248,0.14); color: var(--doc-accent); }
 
+    /* Toasts */
+    .toast-stack {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 999;
+      pointer-events: none;
+    }
+    .toast {
+      pointer-events: auto;
+      padding: 11px 15px;
+      border-radius: 11px;
+      background: var(--surface-solid);
+      border: 1px solid var(--border-strong);
+      color: var(--text);
+      font-size: 0.85rem;
+      box-shadow: var(--shadow);
+      animation: fadeIn 0.18s ease;
+    }
+    .toast.ok { border-left: 4px solid var(--ok); }
+    .toast.err { border-left: 4px solid var(--err); }
+
     .hint { font-size: 0.78rem; color: var(--muted); margin-top: 6px; }
-    @media (max-width: 960px) {
+    @media (max-width: 980px) {
       body { flex-direction: column; }
       .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
       .split-grid, .studio-preview { grid-template-columns: 1fr; }
@@ -397,77 +571,97 @@
 <body>
   <aside class="sidebar">
     <div class="brand">
-      <div class="brand-icon">RL</div>
-      <div class="brand-text">
-        <h1>Robot Labil</h1>
-        <span>100% Full Local AI</span>
+      <div class="brand-left">
+        <div class="brand-logo">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="12" rx="3"/><path d="M12 2v6"/><circle cx="9" cy="14" r="1.5"/><circle cx="15" cy="14" r="1.5"/></svg>
+        </div>
+        <div class="brand-text">
+          <h1>Robot Labil</h1>
+          <span>100% Full Local AI</span>
+        </div>
       </div>
+      <button class="icon-btn" id="themeToggleBtn" title="Ganti Tema Terang/Gelap" onclick="toggleTheme()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      </button>
     </div>
 
     <div class="nav-group">
-      <div class="nav-label">Workspace Terpisah</div>
-      <button class="nav-btn" data-tab="chat" onclick="switchTab('chat')">
-        <span>Chat AI Umum (Bebas)</span>
-        <span class="pill-count">AI</span>
+      <div class="nav-label">Workspace AI</div>
+      <button class="nav-btn active" data-tab="chat" onclick="switchTab('chat')">
+        <span class="nav-btn-left">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>Chat AI Umum</span>
+        </span>
+        <span class="pill-count">Bebas</span>
       </button>
-      <button class="nav-btn active" data-tab="docs" onclick="switchTab('docs')">
-        <span>Tanya Jawab PDF / Doc</span>
+      <button class="nav-btn" data-tab="docs" onclick="switchTab('docs')">
+        <span class="nav-btn-left">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span>Tanya Jawab PDF</span>
+        </span>
         <span class="pill-count" id="docCountBadge">0</span>
       </button>
       <button class="nav-btn" data-tab="affiliate" onclick="switchTab('affiliate')">
-        <span>Otomatisasi Affiliate</span>
+        <span class="nav-btn-left">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+          <span>Studio Affiliate</span>
+        </span>
         <span class="pill-count" id="affCountBadge">0</span>
       </button>
     </div>
 
     <div class="nav-group">
-      <div class="nav-label">Sistem</div>
+      <div class="nav-label">Orkestrasi</div>
       <button class="nav-btn" data-tab="queue" onclick="switchTab('queue')">
-        <span>Antrean &amp; Log Serial</span>
+        <span class="nav-btn-left">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          <span>Antrean &amp; Log</span>
+        </span>
         <span class="pill-count" id="queueCountBadge">0</span>
       </button>
     </div>
 
     <div class="sidebar-footer" id="sysFooter">
-      <div class="status-row"><span><span class="dot warn"></span>Ollama</span><span>Memuat...</span></div>
+      <div class="status-row"><span class="status-left"><span class="dot warn"></span>Ollama</span><span>Memuat...</span></div>
     </div>
   </aside>
 
   <div class="main-wrap">
     <header class="topbar">
       <div class="topbar-title">
-        <h2 id="pageTitle">Workspace Tanya Jawab PDF &amp; Dokumen</h2>
-        <p id="pageSubtitle">Unggah PDF/DOCX lokal, buat ringkasan otomatis, dan tanya jawab 100% offline dengan Ollama.</p>
+        <h2 id="pageTitle">Chat AI Umum (Tanya Jawab Bebas)</h2>
+        <p id="pageSubtitle">Percakapan multi-turn langsung dengan Ollama lokal tanpa perlu mengunggah dokumen.</p>
       </div>
-      <div class="active-worker-pill" id="workerStatusPill">
-        <span class="dot ok"></span><span>Worker Serial Siap (Concurrency = 1)</span>
+      <div class="topbar-right">
+        <div class="active-worker-pill" id="workerStatusPill">
+          <span class="dot ok"></span><span>Worker Serial Siap (Concurrency = 1)</span>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="refreshAll()">Refresh</button>
       </div>
     </header>
 
     <main class="content">
-      <!-- VIEW 0: CHAT AI UMUM (BEBAS / TANPA DOKUMEN) -->
-      <section class="view" id="view-chat">
-        <div class="card chat-shell" style="max-width: 960px; margin: 0 auto;">
+      <!-- VIEW 0: CHAT AI UMUM -->
+      <section class="view active" id="view-chat">
+        <div class="card chat-shell" style="max-width: 980px; margin: 0 auto;">
           <div class="chat-header">
             <div>
-              <strong>Chat AI Umum (100% Offline Ollama)</strong>
-              <div class="hint" style="margin-top:2px;">Tanya jawab bebas untuk brainstorming, penulisan, ide konten, atau penjelasan umum tanpa dokumen.</div>
+              <strong>Asisten AI Lokal (Qwen 2.5 3B)</strong>
+              <div class="hint" style="margin-top:2px;">Tanya jawab bebas untuk brainstorming, penulisan, ide konten, atau penjelasan umum. (Enter untuk kirim, Shift+Enter baris baru)</div>
             </div>
             <button class="btn btn-ghost btn-sm" onclick="clearGeneralChat()">Chat Baru</button>
           </div>
 
-          <div class="chat-messages" id="generalChatMessages">
-            <div class="bubble bot">Halo! Saya asisten AI lokal Anda (Qwen 2.5 3B). Ada yang bisa saya bantu hari ini?</div>
-          </div>
+          <div class="chat-messages" id="generalChatMessages"></div>
 
           <div>
             <div class="chip-row">
               <button type="button" class="chip" onclick="useGeneralPrompt('Buatkan 5 ide konten video pendek TikTok yang menarik hari ini.')">Ide Konten TikTok</button>
               <button type="button" class="chip" onclick="useGeneralPrompt('Bantu rapikan kalimat promosi berikut agar lebih persuasif: ')">Rapikan Copywriting</button>
-              <button type="button" class="chip" onclick="useGeneralPrompt('Jelaskan cara kerja AI lokal secara sederhana dalam 3 poin.')">Tanya Pengetahuan Umum</button>
+              <button type="button" class="chip" onclick="useGeneralPrompt('Jelaskan cara kerja AI lokal secara sederhana dalam 3 poin.')">Penjelasan Sederhana</button>
             </div>
             <form class="chat-input-row" id="generalChatForm">
-              <input type="text" id="generalChatInput" placeholder="Ketik pertanyaan apa saja di sini..." required>
+              <textarea id="generalChatInput" rows="1" placeholder="Ketik pertanyaan apa saja di sini..." required></textarea>
               <button type="submit" class="btn btn-chat" id="generalChatBtn">Kirim</button>
             </form>
           </div>
@@ -475,14 +669,15 @@
       </section>
 
       <!-- VIEW 1: TANYA JAWAB PDF / DOKUMEN -->
-      <section class="view active" id="view-docs">
+      <section class="view" id="view-docs">
         <div class="split-grid">
           <div class="card">
-            <h3>Unggah &amp; Pustaka Dokumen</h3>
+            <h3 class="card-title"><span>Unggah &amp; Pustaka Dokumen</span></h3>
             <div class="dropzone" id="docDropzone" onclick="document.getElementById('docFileInput').click()">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--doc-accent);"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               <p><strong>Klik atau Tarik File ke Sini</strong></p>
-              <span>Mendukung .pdf, .docx, .txt, .md (100% offline)</span>
-              <input type="file" id="docFileInput" accept=".pdf,.docx,.txt,.md" style="display:none">
+              <span>Mendukung .pdf, .docx, .txt, .md (bisa multi-file)</span>
+              <input type="file" id="docFileInput" accept=".pdf,.docx,.txt,.md" multiple style="display:none">
             </div>
             <div class="hint" id="docUploadStatus"></div>
 
@@ -506,9 +701,7 @@
               </div>
             </div>
 
-            <div class="chat-messages" id="chatMessages">
-              <div class="bubble bot">Halo! Pilih dokumen yang sudah diringkas di panel kiri (atau unggah PDF/DOCX baru), lalu ajukan pertanyaan tentang isinya di bawah ini.</div>
-            </div>
+            <div class="chat-messages" id="chatMessages"></div>
 
             <div>
               <div class="chip-row">
@@ -517,7 +710,7 @@
                 <button type="button" class="chip" onclick="useQuickQuestion('Apa kesimpulan dan langkah tindak lanjut yang disarankan?')">Kesimpulan</button>
               </div>
               <form class="chat-input-row" id="qaForm">
-                <input type="text" id="qaInput" placeholder="Tanyakan isi dokumen ini..." required>
+                <textarea id="qaInput" rows="1" placeholder="Tanyakan isi dokumen terpilih..." required></textarea>
                 <button type="submit" class="btn btn-doc" id="qaSubmitBtn">Kirim</button>
               </form>
             </div>
@@ -529,50 +722,53 @@
       <section class="view" id="view-affiliate">
         <div class="split-grid">
           <div class="card">
-            <h3>Buat Konten Video Affiliate</h3>
+            <h3 class="card-title"><span>Builder Konten Video Affiliate</span></h3>
             <form id="affiliateForm">
               <label for="affName">Nama Produk</label>
               <input type="text" id="affName" placeholder="Contoh: Mini Tripod Bluetooth 360" required>
 
-              <label for="affPoints">Keunggulan Produk (1 poin per baris / koma)</label>
-              <textarea id="affPoints" rows="3" placeholder="Ringan muat di tas kecil&#10;Remote shutter Bluetooth&#10;Tinggi maksimal 120 cm"></textarea>
+              <label>Keunggulan Produk</label>
+              <div class="tag-input-row">
+                <input type="text" id="affPointInput" placeholder="Ketik keunggulan lalu Enter / Tambah">
+                <button type="button" class="btn btn-ghost btn-sm" onclick="addSellingPoint()">+ Tambah</button>
+              </div>
+              <div class="pill-list" id="sellingPointPills"></div>
 
-              <label for="affDuration">Target Durasi (detik)</label>
-              <input type="number" id="affDuration" value="20" min="5" max="120">
+              <label for="affDuration">Target Durasi: <strong id="durationLabel">20 detik</strong></label>
+              <input type="range" id="affDuration" value="20" min="8" max="60" oninput="document.getElementById('durationLabel').textContent = this.value + ' detik'">
 
-              <label>Upload Aset Klip / Foto / Musik Baru</label>
+              <label>Upload Aset Klip / Foto / Musik</label>
               <div class="dropzone aff" id="assetDropzone" onclick="document.getElementById('assetFileInput').click()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--aff-accent);"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                 <p><strong>Tarik atau Klik Upload Aset Media</strong></p>
                 <span>.mp4, .mov, .jpg, .png, .mp3, .wav → storage/affiliate_assets/</span>
-                <input type="file" id="assetFileInput" accept=".mp4,.mov,.mkv,.webm,.jpg,.jpeg,.png,.webp,.mp3,.wav,.m4a" style="display:none">
+                <input type="file" id="assetFileInput" accept=".mp4,.mov,.mkv,.webm,.jpg,.jpeg,.png,.webp,.mp3,.wav,.m4a" multiple style="display:none">
               </div>
               <div class="hint" id="assetUploadStatus"></div>
 
-              <label for="affClips">Klip / Foto Produk Terpilih (klik chip di bawah untuk menambah)</label>
-              <textarea id="affClips" rows="2" placeholder="storage/affiliate_assets/produk.jpg" required></textarea>
+              <label>Klip / Foto Produk Terpilih</label>
+              <div class="selected-clips" id="selectedClipsList">
+                <div class="hint">Klik aset di bawah untuk menambahkan klip/foto produk.</div>
+              </div>
               <div class="asset-chips" id="assetChips"></div>
 
-              <label for="affBgm">Musik Latar BGM (opsional, jika Piper TTS tidak dipakai/audio tambahan)</label>
-              <input type="text" id="affBgm" placeholder="storage/affiliate_assets/bgm.mp3">
+              <label for="affBgm">Musik Latar BGM (opsional)</label>
+              <input type="text" id="affBgm" placeholder="Klik chip audio atau isi path storage/affiliate_assets/bgm.mp3">
 
-              <button type="submit" class="btn btn-aff" style="width:100%; margin-top:14px;">Generate Naskah + Render Video 9:16</button>
+              <button type="submit" class="btn btn-aff" id="affSubmitBtn" style="width:100%; margin-top:16px;">Generate Naskah + Render Video 9:16</button>
             </form>
-            <div class="hint" id="affFormStatus"></div>
           </div>
 
           <div class="card">
-            <h3>
+            <h3 class="card-title">
               <span>Hasil Studio Affiliate</span>
-              <button class="btn btn-ghost btn-sm" onclick="refreshAll()">Refresh</button>
+              <select id="affJobSelect" style="width:auto; min-width:220px;" onchange="inspectAffiliateJob(this.value)">
+                <option value="">Belum ada job affiliate</option>
+              </select>
             </h3>
 
-            <label for="affJobSelect">Pilih Job Affiliate</label>
-            <select id="affJobSelect" onchange="inspectAffiliateJob(this.value)">
-              <option value="">Belum ada job affiliate</option>
-            </select>
-
-            <div id="affStudioEmpty" class="hint" style="margin-top:16px;">
-              Pilih job berstatus <strong>DONE</strong> untuk memutar video 9:16, menyalin hook/caption/hashtag, dan cek checklist keranjang kuning.
+            <div id="affStudioEmpty" class="hint" style="padding:24px 0;">
+              Pilih job berstatus <strong>DONE</strong> untuk memutar video 9:16, menyalin hook/caption/hashtag, dan melihat checklist keranjang kuning.
             </div>
 
             <div class="studio-preview" id="affStudioPanel" style="display:none;">
@@ -587,21 +783,29 @@
 
               <div>
                 <div class="copy-card">
-                  <h4>Hook Overlay</h4>
+                  <div class="copy-card-head">
+                    <h4>Hook Overlay</h4>
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="copyText(document.getElementById('studioHook').textContent, 'Hook disalin!')">Copy</button>
+                  </div>
                   <p id="studioHook">-</p>
                 </div>
                 <div class="copy-card">
-                  <h4>Caption &amp; Hashtags</h4>
+                  <div class="copy-card-head">
+                    <h4>Caption &amp; Hashtags</h4>
+                    <button type="button" class="btn btn-aff btn-sm" onclick="copyCaptionBundle()">Copy Caption</button>
+                  </div>
                   <p id="studioCaption">-</p>
-                  <button type="button" class="btn btn-aff btn-sm" style="margin-top:8px;" onclick="copyCaptionBundle()">Copy Caption + Hashtags</button>
                 </div>
                 <div class="copy-card">
-                  <h4>Naskah Voiceover (Piper TTS)</h4>
+                  <div class="copy-card-head">
+                    <h4>Naskah Voiceover (Piper TTS)</h4>
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="copyText(document.getElementById('studioVoiceover').textContent, 'Naskah voiceover disalin!')">Copy</button>
+                  </div>
                   <p id="studioVoiceover">-</p>
                 </div>
                 <div class="copy-card">
-                  <h4>Checklist Keranjang Kuning</h4>
-                  <p id="studioChecklist">1. Upload MP4 ke TikTok Draft.<br>2. Tambah Tautan → Produk → pilih produk.<br>3. Tempel caption &amp; posting.</p>
+                  <div class="copy-card-head"><h4>Checklist Keranjang Kuning</h4></div>
+                  <p id="studioChecklist">-</p>
                 </div>
               </div>
             </div>
@@ -611,15 +815,13 @@
 
       <!-- VIEW 3: ANTREAN & LOG SERIAL -->
       <section class="view" id="view-queue">
+        <div class="kpi-grid" id="queueKpis"></div>
         <div class="card">
-          <h3>
-            <span>Monitor Antrean Serial (Concurrency = 1)</span>
-            <button class="btn btn-ghost btn-sm" onclick="refreshAll()">Refresh</button>
-          </h3>
           <div class="filter-bar">
             <button class="btn btn-ghost btn-sm" onclick="setJobFilter('all')">Semua</button>
             <button class="btn btn-ghost btn-sm" onclick="setJobFilter('doc_summary')">Dokumen</button>
             <button class="btn btn-ghost btn-sm" onclick="setJobFilter('affiliate_video')">Affiliate</button>
+            <input type="text" id="queueSearch" placeholder="Cari sumber atau status..." style="max-width:260px; margin-left:auto;" oninput="renderQueueTable()">
           </div>
           <table>
             <thead>
@@ -640,16 +842,20 @@
     </main>
   </div>
 
+  <div class="toast-stack" id="toastStack"></div>
+
   <script>
     const state = {
-      activeTab: 'docs',
+      activeTab: 'chat',
       docs: [],
       jobs: [],
       assets: [],
       selectedDocId: '',
       jobFilter: 'all',
-      chatsByDoc: {},
-      generalHistory: [],
+      chatsByDoc: JSON.parse(localStorage.getItem('rl_doc_chats') || '{}'),
+      generalHistory: JSON.parse(localStorage.getItem('rl_general_chat') || '[]'),
+      sellingPoints: [],
+      selectedClips: [],
       currentCaptionCopy: ''
     };
 
@@ -660,7 +866,7 @@
       },
       docs: {
         title: 'Workspace Tanya Jawab PDF & Dokumen',
-        subtitle: 'Unggah PDF/DOCX lokal, buat ringkasan otomatis, dan tanya jawab 100% offline dengan Ollama.'
+        subtitle: 'Unggah PDF/DOCX lokal, buat ringkasan otomatis, dan tanya jawab 100% offline.'
       },
       affiliate: {
         title: 'Studio Otomatisasi Konten Affiliate',
@@ -668,9 +874,30 @@
       },
       queue: {
         title: 'Monitor Antrean Serial & Log Sistem',
-        subtitle: 'Seluruh proses berat (LLM, TTS, Render) berjalan bergantian satu per satu untuk menjaga batas 8 GB RAM / 4 GB VRAM.'
+        subtitle: 'Seluruh proses berat (LLM, TTS, Render) berjalan bergantian satu per satu.'
       }
     };
+
+    function applySavedTheme() {
+      const saved = localStorage.getItem('rl_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', saved);
+    }
+
+    function toggleTheme() {
+      const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+      const next = cur === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('rl_theme', next);
+    }
+
+    function showToast(msg, kind = 'ok') {
+      const stack = document.getElementById('toastStack');
+      const el = document.createElement('div');
+      el.className = `toast ${kind}`;
+      el.textContent = msg;
+      stack.appendChild(el);
+      setTimeout(() => { el.remove(); }, 3400);
+    }
 
     function switchTab(tab) {
       state.activeTab = tab;
@@ -692,18 +919,164 @@
       return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
     }
 
+    // Safe lightweight offline Markdown renderer (escapes HTML first).
+    function renderMarkdown(raw) {
+      let text = escapeHtml(raw || '');
+      const codeBlocks = [];
+      text = text.replace(/```[\w]*\n?([\s\S]*?)```/g, (_, code) => {
+        const idx = codeBlocks.length;
+        codeBlocks.push(`<pre><code>${code.trim()}</code></pre>`);
+        return `@@CODEBLOCK_${idx}@@`;
+      });
+      text = text.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+      text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+      const lines = text.split('\n');
+      let html = '';
+      let inList = false;
+      const closeList = () => { if (inList) { html += '</ul>'; inList = false; } };
+
+      for (const line of lines) {
+        const t = line.trim();
+        if (t.startsWith('@@CODEBLOCK_')) {
+          closeList();
+          html += t;
+        } else if (t.startsWith('### ')) {
+          closeList();
+          html += `<h3>${t.slice(4)}</h3>`;
+        } else if (t.startsWith('## ')) {
+          closeList();
+          html += `<h2>${t.slice(3)}</h2>`;
+        } else if (t.startsWith('# ')) {
+          closeList();
+          html += `<h1>${t.slice(2)}</h1>`;
+        } else if (t.startsWith('- ') || t.startsWith('* ')) {
+          if (!inList) { html += '<ul>'; inList = true; }
+          html += `<li>${t.slice(2)}</li>`;
+        } else if (t === '') {
+          closeList();
+        } else {
+          closeList();
+          html += `<p>${t}</p>`;
+        }
+      }
+      closeList();
+      codeBlocks.forEach((blk, idx) => { html = html.replace(`@@CODEBLOCK_${idx}@@`, blk); });
+      return html;
+    }
+
+    async function copyText(text, toastMsg = 'Disalin ke clipboard!') {
+      if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast(toastMsg, 'ok');
+      } catch {
+        prompt('Salin teks berikut:', text);
+      }
+    }
+
+    function autoGrowTextarea(el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 130) + 'px';
+    }
+
+    function bindEnterSubmit(textareaId, formId) {
+      const ta = document.getElementById(textareaId);
+      ta.addEventListener('input', () => autoGrowTextarea(ta));
+      ta.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          document.getElementById(formId).requestSubmit();
+        }
+      });
+    }
+
     async function refreshHealth() {
       try {
         const h = await fetchJSON('/api/health');
         const dot = ok => `<span class="dot ${ok ? 'ok' : 'err'}"></span>`;
         document.getElementById('sysFooter').innerHTML = `
-          <div class="status-row"><span>${dot(h.ollama_ok)}Ollama (${escapeHtml(h.model)})</span><span>${h.ollama_ok ? 'Online' : 'Offline'}</span></div>
-          <div class="status-row"><span>${dot(h.piper_available)}Piper TTS</span><span>${h.piper_available ? 'Siap' : 'Off'}</span></div>
-          <div class="status-row"><span>${dot(h.ffmpeg_available)}FFmpeg</span><span>${h.ffmpeg_available ? 'Siap' : 'Off'}</span></div>
+          <div class="status-row"><span class="status-left">${dot(h.ollama_ok)}Ollama (${escapeHtml(h.model)})</span><span>${h.ollama_ok ? 'Online' : 'Offline'}</span></div>
+          <div class="status-row"><span class="status-left">${dot(h.piper_available)}Piper TTS</span><span>${h.piper_available ? 'Siap' : 'Off'}</span></div>
+          <div class="status-row"><span class="status-left">${dot(h.ffmpeg_available)}FFmpeg</span><span>${h.ffmpeg_available ? 'Siap' : 'Off'}</span></div>
         `;
       } catch (e) { console.error(e); }
     }
 
+    /* ---------- GENERAL CHAT ---------- */
+    function renderGeneralChat(isThinking = false) {
+      const box = document.getElementById('generalChatMessages');
+      let html = '';
+      if (!state.generalHistory.length && !isThinking) {
+        html = `<div class="msg-row bot"><div class="bubble md"><p>Halo! Saya asisten AI lokal Anda (<strong>Qwen 2.5 3B</strong>). Ajukan pertanyaan apa saja secara offline.</p></div></div>`;
+      } else {
+        html = state.generalHistory.map((m, idx) => {
+          const roleCls = m.role === 'user' ? 'user' : 'bot';
+          const body = m.role === 'user' ? escapeHtml(m.content) : renderMarkdown(m.content);
+          const copyBtn = m.role === 'assistant'
+            ? `<div class="msg-actions"><button type="button" class="msg-copy" onclick="copyGeneralMsg(${idx})">Salin jawaban</button></div>`
+            : '';
+          return `<div class="msg-row ${roleCls}"><div class="bubble md">${body}</div>${copyBtn}</div>`;
+        }).join('');
+      }
+      if (isThinking) {
+        html += `<div class="msg-row bot"><div class="bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div></div>`;
+      }
+      box.innerHTML = html;
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function copyGeneralMsg(idx) {
+      const m = state.generalHistory[idx];
+      if (m) copyText(m.content, 'Jawaban disalin!');
+    }
+
+    function useGeneralPrompt(q) {
+      const el = document.getElementById('generalChatInput');
+      el.value = q;
+      autoGrowTextarea(el);
+      el.focus();
+    }
+
+    function clearGeneralChat() {
+      state.generalHistory = [];
+      localStorage.removeItem('rl_general_chat');
+      renderGeneralChat();
+      showToast('Percakapan baru dimulai');
+    }
+
+    document.getElementById('generalChatForm').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const input = document.getElementById('generalChatInput');
+      const btn = document.getElementById('generalChatBtn');
+      const msg = input.value.trim();
+      if (!msg) return;
+
+      const priorHistory = state.generalHistory.slice();
+      state.generalHistory.push({ role: 'user', content: msg });
+      localStorage.setItem('rl_general_chat', JSON.stringify(state.generalHistory));
+      input.value = '';
+      autoGrowTextarea(input);
+      btn.disabled = true;
+      renderGeneralChat(true);
+      try {
+        const res = await fetchJSON('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ history: priorHistory, message: msg })
+        });
+        state.generalHistory.push({ role: 'assistant', content: res.reply });
+        localStorage.setItem('rl_general_chat', JSON.stringify(state.generalHistory));
+      } catch (e) {
+        state.generalHistory.push({ role: 'assistant', content: 'Error: ' + e.message });
+        showToast(e.message, 'err');
+      } finally {
+        btn.disabled = false;
+        renderGeneralChat(false);
+      }
+    });
+
+    /* ---------- DOCUMENT Q&A ---------- */
     async function refreshDocs() {
       state.docs = await fetchJSON('/api/docs');
       document.getElementById('docCountBadge').textContent = state.docs.length;
@@ -722,12 +1095,17 @@
         listEl.innerHTML = '<div class="hint">Tidak ada dokumen yang cocok.</div>';
         return;
       }
-      listEl.innerHTML = filtered.map(d => `
-        <div class="doc-item ${d.id === state.selectedDocId ? 'active' : ''}" onclick="selectDoc('${d.id}')">
-          <div class="doc-item-title">${escapeHtml(d.filename)}</div>
-          <div class="doc-item-meta">${d.word_count} kata • ${escapeHtml(d.created_at_local || '')}</div>
-        </div>
-      `).join('');
+      listEl.innerHTML = filtered.map(d => {
+        const ext = (d.filename.split('.').pop() || 'DOC').toUpperCase();
+        return `
+          <div class="doc-item ${d.id === state.selectedDocId ? 'active' : ''}" onclick="selectDoc('${d.id}')">
+            <span class="doc-ext">${escapeHtml(ext)}</span>
+            <div class="doc-item-info">
+              <div class="doc-item-title">${escapeHtml(d.filename)}</div>
+              <div class="doc-item-meta">${d.word_count} kata • ${escapeHtml(d.created_at_local || '')}</div>
+            </div>
+          </div>`;
+      }).join('');
     }
 
     function selectDoc(docId) {
@@ -740,26 +1118,44 @@
       renderChatMessages();
     }
 
-    function renderChatMessages() {
+    function renderChatMessages(isThinking = false) {
       const box = document.getElementById('chatMessages');
       const msgs = state.chatsByDoc[state.selectedDocId] || [];
-      if (!msgs.length) {
-        box.innerHTML = '<div class="bubble bot">Dokumen aktif siap. Klik <strong>Lihat Ringkasan</strong> atau ketik pertanyaan tentang isi dokumen ini.</div>';
-        return;
+      let html = '';
+      if (!msgs.length && !isThinking) {
+        html = `<div class="msg-row bot"><div class="bubble md"><p>Pilih dokumen di panel kiri, lalu klik <strong>Lihat Ringkasan</strong> atau ketik pertanyaan tentang isi dokumen.</p></div></div>`;
+      } else {
+        html = msgs.map((m, idx) => {
+          const body = m.role === 'user' ? escapeHtml(m.text) : renderMarkdown(m.text);
+          const copyBtn = m.role !== 'user'
+            ? `<div class="msg-actions"><button type="button" class="msg-copy" onclick="copyDocMsg(${idx})">Salin</button></div>`
+            : '';
+          return `<div class="msg-row ${m.role}"><div class="bubble md">${body}</div>${copyBtn}</div>`;
+        }).join('');
       }
-      box.innerHTML = msgs.map(m => `<div class="bubble ${m.role}">${escapeHtml(m.text)}</div>`).join('');
+      if (isThinking) {
+        html += `<div class="msg-row bot"><div class="bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div></div>`;
+      }
+      box.innerHTML = html;
       box.scrollTop = box.scrollHeight;
+    }
+
+    function copyDocMsg(idx) {
+      const msgs = state.chatsByDoc[state.selectedDocId] || [];
+      if (msgs[idx]) copyText(msgs[idx].text, 'Teks disalin!');
     }
 
     function appendChat(docId, role, text) {
       if (!state.chatsByDoc[docId]) state.chatsByDoc[docId] = [];
       state.chatsByDoc[docId].push({ role, text });
+      localStorage.setItem('rl_doc_chats', JSON.stringify(state.chatsByDoc));
       if (docId === state.selectedDocId) renderChatMessages();
     }
 
     function clearActiveChat() {
       if (!state.selectedDocId) return;
       state.chatsByDoc[state.selectedDocId] = [];
+      localStorage.setItem('rl_doc_chats', JSON.stringify(state.chatsByDoc));
       renderChatMessages();
     }
 
@@ -769,78 +1165,113 @@
         const res = await fetchJSON('/api/docs/summary?id=' + encodeURIComponent(state.selectedDocId));
         appendChat(state.selectedDocId, 'summary', res.summary_markdown);
       } catch (e) {
-        appendChat(state.selectedDocId, 'bot', 'Gagal memuat ringkasan: ' + e.message);
+        showToast('Gagal memuat ringkasan: ' + e.message, 'err');
       }
     }
 
     function useQuickQuestion(q) {
-      document.getElementById('qaInput').value = q;
-      document.getElementById('qaInput').focus();
-    }
-
-    function useGeneralPrompt(q) {
-      const el = document.getElementById('generalChatInput');
+      const el = document.getElementById('qaInput');
       el.value = q;
+      autoGrowTextarea(el);
       el.focus();
     }
 
-    function renderGeneralChat() {
-      const box = document.getElementById('generalChatMessages');
-      if (!state.generalHistory.length) {
-        box.innerHTML = '<div class="bubble bot">Halo! Saya asisten AI lokal Anda (Qwen 2.5 3B). Ada yang bisa saya bantu hari ini?</div>';
+    async function uploadDocFiles(files) {
+      const msg = document.getElementById('docUploadStatus');
+      for (const file of files) {
+        msg.textContent = `Mengunggah ${file.name}...`;
+        const fd = new FormData();
+        fd.append('file', file);
+        try {
+          const res = await fetchJSON('/api/docs/upload', { method: 'POST', body: fd });
+          msg.textContent = `Masuk antrean: ${res.filename}`;
+          showToast(`${res.filename} masuk antrean ringkas`);
+        } catch (e) {
+          msg.textContent = 'Gagal unggah: ' + e.message;
+          showToast(e.message, 'err');
+        }
+      }
+      refreshAll();
+    }
+
+    document.getElementById('qaForm').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      if (!state.selectedDocId) {
+        showToast('Pilih dokumen terlebih dahulu', 'err');
         return;
       }
-      box.innerHTML = state.generalHistory.map(m =>
-        `<div class="bubble ${m.role === 'user' ? 'user' : 'bot'}">${escapeHtml(m.content)}</div>`
-      ).join('');
-      box.scrollTop = box.scrollHeight;
-    }
+      const input = document.getElementById('qaInput');
+      const btn = document.getElementById('qaSubmitBtn');
+      const q = input.value.trim();
+      if (!q) return;
 
-    function clearGeneralChat() {
-      state.generalHistory = [];
-      renderGeneralChat();
-    }
-
-    document.getElementById('generalChatForm').addEventListener('submit', async (ev) => {
-      ev.preventDefault();
-      const input = document.getElementById('generalChatInput');
-      const btn = document.getElementById('generalChatBtn');
-      const msg = input.value.trim();
-      if (!msg) return;
-
-      const priorHistory = state.generalHistory.slice();
-      state.generalHistory.push({ role: 'user', content: msg });
-      renderGeneralChat();
+      const docId = state.selectedDocId;
+      appendChat(docId, 'user', q);
       input.value = '';
+      autoGrowTextarea(input);
       btn.disabled = true;
+      renderChatMessages(true);
       try {
-        const res = await fetchJSON('/api/chat', {
+        const res = await fetchJSON('/api/docs/qa', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ history: priorHistory, message: msg })
+          body: JSON.stringify({ doc_id: docId, question: q })
         });
-        state.generalHistory.push({ role: 'assistant', content: res.reply });
-        renderGeneralChat();
+        appendChat(docId, 'bot', res.answer);
       } catch (e) {
-        state.generalHistory.push({ role: 'assistant', content: 'Error: ' + e.message });
-        renderGeneralChat();
+        appendChat(docId, 'bot', 'Error: ' + e.message);
+        showToast(e.message, 'err');
       } finally {
         btn.disabled = false;
+        renderChatMessages(false);
       }
     });
 
-    async function uploadDocFile(file) {
-      const msg = document.getElementById('docUploadStatus');
-      msg.textContent = `Mengunggah ${file.name}...`;
-      const fd = new FormData();
-      fd.append('file', file);
-      try {
-        const res = await fetchJSON('/api/docs/upload', { method: 'POST', body: fd });
-        msg.textContent = `Masuk antrean ringkas: ${res.filename} (${res.job_id})`;
-        refreshAll();
-      } catch (e) {
-        msg.textContent = 'Gagal unggah: ' + e.message;
+    /* ---------- AFFILIATE STUDIO ---------- */
+    function renderSellingPoints() {
+      const el = document.getElementById('sellingPointPills');
+      el.innerHTML = state.sellingPoints.map((pt, i) =>
+        `<span class="tag-pill">${escapeHtml(pt)}<button type="button" onclick="removeSellingPoint(${i})">&times;</button></span>`
+      ).join('');
+    }
+
+    function addSellingPoint() {
+      const input = document.getElementById('affPointInput');
+      const val = input.value.trim();
+      if (!val) return;
+      val.split(/[\n,]+/).map(x => x.trim()).filter(Boolean).forEach(item => {
+        if (!state.sellingPoints.includes(item)) state.sellingPoints.push(item);
+      });
+      input.value = '';
+      renderSellingPoints();
+    }
+
+    function removeSellingPoint(idx) {
+      state.sellingPoints.splice(idx, 1);
+      renderSellingPoints();
+    }
+
+    document.getElementById('affPointInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); addSellingPoint(); }
+    });
+
+    function renderSelectedClips() {
+      const el = document.getElementById('selectedClipsList');
+      if (!state.selectedClips.length) {
+        el.innerHTML = '<div class="hint">Klik aset di bawah untuk menambahkan klip/foto produk.</div>';
+        return;
       }
+      el.innerHTML = state.selectedClips.map((c, idx) => `
+        <div class="clip-row">
+          <span>${idx + 1}. ${escapeHtml(c)}</span>
+          <button type="button" class="btn btn-ghost btn-sm" style="padding:2px 7px;" onclick="removeClip(${idx})">&times;</button>
+        </div>
+      `).join('');
+    }
+
+    function removeClip(idx) {
+      state.selectedClips.splice(idx, 1);
+      renderSelectedClips();
     }
 
     async function refreshAssets() {
@@ -859,82 +1290,65 @@
       const lower = path.toLowerCase();
       if (lower.endsWith('.mp3') || lower.endsWith('.wav') || lower.endsWith('.m4a') || lower.endsWith('.aac')) {
         document.getElementById('affBgm').value = path;
+        showToast('BGM dipilih: ' + path.split('/').pop());
         return;
       }
-      const ta = document.getElementById('affClips');
-      const current = ta.value.split(/[\n,]+/).map(x => x.trim()).filter(Boolean);
-      if (!current.includes(path)) current.push(path);
-      ta.value = current.join('\n');
+      if (!state.selectedClips.includes(path)) {
+        state.selectedClips.push(path);
+        renderSelectedClips();
+      }
     }
 
-    async function uploadAssetFile(file) {
+    async function uploadAssetFiles(files) {
       const msg = document.getElementById('assetUploadStatus');
-      msg.textContent = `Mengunggah aset ${file.name}...`;
-      const fd = new FormData();
-      fd.append('file', file);
-      try {
-        const res = await fetchJSON('/api/assets/upload', { method: 'POST', body: fd });
-        msg.textContent = `Aset tersimpan: ${res.path}`;
-        await refreshAssets();
-        pickAsset(res.path);
-      } catch (e) {
-        msg.textContent = 'Gagal upload aset: ' + e.message;
+      for (const file of files) {
+        msg.textContent = `Mengunggah aset ${file.name}...`;
+        const fd = new FormData();
+        fd.append('file', file);
+        try {
+          const res = await fetchJSON('/api/assets/upload', { method: 'POST', body: fd });
+          msg.textContent = `Aset tersimpan: ${res.path}`;
+          await refreshAssets();
+          pickAsset(res.path);
+          showToast(`Aset ${res.filename} siap dipakai`);
+        } catch (e) {
+          msg.textContent = 'Gagal upload aset: ' + e.message;
+          showToast(e.message, 'err');
+        }
       }
     }
 
-    async function refreshJobs() {
-      state.jobs = await fetchJSON('/api/jobs');
-      const affJobs = state.jobs.filter(j => j.job_type === 'affiliate_video');
-      const pendingCount = state.jobs.filter(j => j.status === 'QUEUED' || j.status === 'PROCESSING').length;
-      document.getElementById('affCountBadge').textContent = affJobs.length;
-      document.getElementById('queueCountBadge').textContent = pendingCount || state.jobs.length;
-
-      const active = state.jobs.find(j => j.status === 'PROCESSING');
-      const pill = document.getElementById('workerStatusPill');
-      pill.innerHTML = active
-        ? `<span class="dot warn"></span><span>Memproses: ${escapeHtml(active.job_type)} (${escapeHtml(active.source_path)})</span>`
-        : `<span class="dot ok"></span><span>Worker Serial Siap (Concurrency = 1)</span>`;
-
-      const sel = document.getElementById('affJobSelect');
-      const prev = sel.value;
-      sel.innerHTML = affJobs.length
-        ? affJobs.map(j => `<option value="${j.id}">[${j.status}] ${escapeHtml(j.source_path)} — ${escapeHtml(j.created_at_local)}</option>`).join('')
-        : '<option value="">Belum ada job affiliate</option>';
-      if (prev && affJobs.some(j => j.id === prev)) {
-        sel.value = prev;
-      } else if (affJobs.length > 0 && affJobs[0].status === 'DONE') {
-        sel.value = affJobs[0].id;
-        inspectAffiliateJob(affJobs[0].id);
-      }
-
-      renderQueueTable();
-    }
-
-    function setJobFilter(filter) {
-      state.jobFilter = filter;
-      renderQueueTable();
-    }
-
-    function renderQueueTable() {
-      const filtered = state.jobs.filter(j => state.jobFilter === 'all' || j.job_type === state.jobFilter);
-      const body = document.getElementById('queueTableBody');
-      if (!filtered.length) {
-        body.innerHTML = '<tr><td colspan="5">Tidak ada job pada filter ini.</td></tr>';
+    document.getElementById('affiliateForm').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      if (document.getElementById('affPointInput').value.trim()) addSellingPoint();
+      if (!state.selectedClips.length) {
+        showToast('Pilih atau unggah minimal 1 klip/foto produk', 'err');
         return;
       }
-      body.innerHTML = filtered.map(j => {
-        const out = j.error_message
-          ? `<span style="color:var(--err);">${escapeHtml(j.error_message)}</span>`
-          : escapeHtml(j.result_path || '-');
-        return `<tr>
-          <td>${escapeHtml(j.created_at_local)}</td>
-          <td>${escapeHtml(j.job_type)}</td>
-          <td><span class="badge-status st-${escapeHtml(j.status)}">${escapeHtml(j.status)}</span></td>
-          <td>${escapeHtml(j.source_path)}</td>
-          <td>${out}</td>
-        </tr>`;
-      }).join('');
-    }
+      const btn = document.getElementById('affSubmitBtn');
+      btn.disabled = true;
+      try {
+        const res = await fetchJSON('/api/affiliate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            product_name: document.getElementById('affName').value.trim(),
+            selling_points: state.sellingPoints,
+            target_duration_sec: parseInt(document.getElementById('affDuration').value, 10) || 20,
+            clips: state.selectedClips,
+            bgm: document.getElementById('affBgm').value.trim()
+          })
+        });
+        showToast(`Job affiliate masuk antrean (${res.job_id})`);
+        await refreshJobs();
+        document.getElementById('affJobSelect').value = res.job_id;
+        inspectAffiliateJob(res.job_id);
+      } catch (e) {
+        showToast(e.message, 'err');
+      } finally {
+        btn.disabled = false;
+      }
+    });
 
     async function inspectAffiliateJob(jobId) {
       const empty = document.getElementById('affStudioEmpty');
@@ -979,21 +1393,87 @@
       }
     }
 
-    async function copyCaptionBundle() {
-      if (!state.currentCaptionCopy) return;
-      try {
-        await navigator.clipboard.writeText(state.currentCaptionCopy);
-        alert('Caption + Hashtags disalin ke clipboard!');
-      } catch {
-        prompt('Salin caption berikut:', state.currentCaptionCopy);
+    function copyCaptionBundle() {
+      copyText(state.currentCaptionCopy, 'Caption + Hashtags disalin!');
+    }
+
+    /* ---------- QUEUE & MONITOR ---------- */
+    async function refreshJobs() {
+      state.jobs = await fetchJSON('/api/jobs');
+      const affJobs = state.jobs.filter(j => j.job_type === 'affiliate_video');
+      const pendingCount = state.jobs.filter(j => j.status === 'QUEUED' || j.status === 'PROCESSING').length;
+      document.getElementById('affCountBadge').textContent = affJobs.length;
+      document.getElementById('queueCountBadge').textContent = pendingCount || state.jobs.length;
+
+      const active = state.jobs.find(j => j.status === 'PROCESSING');
+      const pill = document.getElementById('workerStatusPill');
+      pill.innerHTML = active
+        ? `<span class="dot warn"></span><span>Memproses: ${escapeHtml(active.job_type)} (${escapeHtml(active.source_path)})</span>`
+        : `<span class="dot ok"></span><span>Worker Serial Siap (Concurrency = 1)</span>`;
+
+      const sel = document.getElementById('affJobSelect');
+      const prev = sel.value;
+      sel.innerHTML = affJobs.length
+        ? affJobs.map(j => `<option value="${j.id}">[${j.status}] ${escapeHtml(j.source_path)} — ${escapeHtml(j.created_at_local)}</option>`).join('')
+        : '<option value="">Belum ada job affiliate</option>';
+      if (prev && affJobs.some(j => j.id === prev)) {
+        sel.value = prev;
+      } else if (affJobs.length > 0 && affJobs[0].status === 'DONE') {
+        sel.value = affJobs[0].id;
+        inspectAffiliateJob(affJobs[0].id);
       }
+
+      renderQueueKPIs();
+      renderQueueTable();
+    }
+
+    function renderQueueKPIs() {
+      const done = state.jobs.filter(j => j.status === 'DONE').length;
+      const queued = state.jobs.filter(j => j.status === 'QUEUED' || j.status === 'PROCESSING').length;
+      const failed = state.jobs.filter(j => j.status === 'FAILED').length;
+      document.getElementById('queueKpis').innerHTML = `
+        <div class="kpi-card"><span>Total Riwayat</span><strong>${state.jobs.length}</strong></div>
+        <div class="kpi-card"><span>Antre / Proses</span><strong style="color:var(--warn)">${queued}</strong></div>
+        <div class="kpi-card"><span>Selesai</span><strong style="color:var(--ok)">${done}</strong></div>
+        <div class="kpi-card"><span>Gagal</span><strong style="color:var(--err)">${failed}</strong></div>
+      `;
+    }
+
+    function setJobFilter(filter) {
+      state.jobFilter = filter;
+      renderQueueTable();
+    }
+
+    function renderQueueTable() {
+      const q = (document.getElementById('queueSearch').value || '').trim().toLowerCase();
+      const filtered = state.jobs.filter(j =>
+        (state.jobFilter === 'all' || j.job_type === state.jobFilter) &&
+        (!q || j.source_path.toLowerCase().includes(q) || j.status.toLowerCase().includes(q))
+      );
+      const body = document.getElementById('queueTableBody');
+      if (!filtered.length) {
+        body.innerHTML = '<tr><td colspan="5">Tidak ada job pada filter ini.</td></tr>';
+        return;
+      }
+      body.innerHTML = filtered.map(j => {
+        const out = j.error_message
+          ? `<span style="color:var(--err);">${escapeHtml(j.error_message)}</span>`
+          : escapeHtml(j.result_path || '-');
+        return `<tr>
+          <td>${escapeHtml(j.created_at_local)}</td>
+          <td>${escapeHtml(j.job_type)}</td>
+          <td><span class="badge-status st-${escapeHtml(j.status)}">${escapeHtml(j.status)}</span></td>
+          <td>${escapeHtml(j.source_path)}</td>
+          <td>${out}</td>
+        </tr>`;
+      }).join('');
     }
 
     function wireDropzone(zoneId, inputId, handler) {
       const zone = document.getElementById(zoneId);
       const input = document.getElementById(inputId);
       input.addEventListener('change', () => {
-        if (input.files.length) handler(input.files[0]);
+        if (input.files.length) handler(Array.from(input.files));
         input.value = '';
       });
       zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
@@ -1001,72 +1481,21 @@
       zone.addEventListener('drop', e => {
         e.preventDefault();
         zone.classList.remove('dragover');
-        if (e.dataTransfer.files.length) handler(e.dataTransfer.files[0]);
+        if (e.dataTransfer.files.length) handler(Array.from(e.dataTransfer.files));
       });
     }
-
-    document.getElementById('qaForm').addEventListener('submit', async (ev) => {
-      ev.preventDefault();
-      if (!state.selectedDocId) {
-        alert('Pilih dokumen terlebih dahulu di daftar sebelah kiri.');
-        return;
-      }
-      const input = document.getElementById('qaInput');
-      const btn = document.getElementById('qaSubmitBtn');
-      const q = input.value.trim();
-      if (!q) return;
-
-      const docId = state.selectedDocId;
-      appendChat(docId, 'user', q);
-      input.value = '';
-      btn.disabled = true;
-      try {
-        const res = await fetchJSON('/api/docs/qa', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ doc_id: docId, question: q })
-        });
-        appendChat(docId, 'bot', res.answer);
-      } catch (e) {
-        appendChat(docId, 'bot', 'Error: ' + e.message);
-      } finally {
-        btn.disabled = false;
-      }
-    });
-
-    document.getElementById('affiliateForm').addEventListener('submit', async (ev) => {
-      ev.preventDefault();
-      const splitItems = s => s.split(/[\n,]+/).map(x => x.trim()).filter(Boolean);
-      const payload = {
-        product_name: document.getElementById('affName').value.trim(),
-        selling_points: splitItems(document.getElementById('affPoints').value),
-        target_duration_sec: parseInt(document.getElementById('affDuration').value, 10) || 20,
-        clips: splitItems(document.getElementById('affClips').value),
-        bgm: document.getElementById('affBgm').value.trim()
-      };
-      const statusEl = document.getElementById('affFormStatus');
-      statusEl.textContent = 'Mengirim ke antrean serial...';
-      try {
-        const res = await fetchJSON('/api/affiliate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        statusEl.textContent = `Masuk antrean: ${res.job_id}`;
-        await refreshJobs();
-        document.getElementById('affJobSelect').value = res.job_id;
-        inspectAffiliateJob(res.job_id);
-      } catch (e) {
-        statusEl.textContent = 'Gagal: ' + e.message;
-      }
-    });
 
     async function refreshAll() {
       await Promise.all([refreshHealth(), refreshDocs(), refreshAssets(), refreshJobs()]);
     }
 
-    wireDropzone('docDropzone', 'docFileInput', uploadDocFile);
-    wireDropzone('assetDropzone', 'assetFileInput', uploadAssetFile);
+    applySavedTheme();
+    bindEnterSubmit('generalChatInput', 'generalChatForm');
+    bindEnterSubmit('qaInput', 'qaForm');
+    wireDropzone('docDropzone', 'docFileInput', uploadDocFiles);
+    wireDropzone('assetDropzone', 'assetFileInput', uploadAssetFiles);
+    renderGeneralChat();
+    renderChatMessages();
 
     const hashTab = location.hash.replace('#', '');
     if (tabMeta[hashTab]) switchTab(hashTab);
