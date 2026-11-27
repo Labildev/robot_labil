@@ -1,0 +1,32 @@
+app:
+  name: "robot_labil"
+  log_level: "info"
+  max_concurrency: 1
+
+paths:
+  database: "storage/robot.db"
+  input_docs: "storage/input_docs"
+  output_docs: "storage/output_docs"
+  affiliate_assets: "storage/affiliate_assets"
+  output_videos: "storage/output_videos"
+  error_logs: "storage/error_logs"
+  prompts_dir: "prompts"
+
+ollama:
+  base_url: "http://127.0.0.1:11434"
+  model: "qwen2.5:3b"
+  num_ctx: 4096
+  keep_alive: "2m"
+  request_timeout_sec: 180
+
+document:
+  chunk_word_limit: 2000
+  map_reduce_threshold_words: 3000
+  pdftotext_bin: "pdftotext"
+
+watcher:
+  enabled: true
+  poll_interval_sec: 5
+
+web:
+  listen_addr: "127.0.0.1:8080"
