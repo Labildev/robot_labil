@@ -81,6 +81,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/assets", s.handleAssets)
 	mux.HandleFunc("POST /api/affiliate", s.handleAffiliate)
 	mux.HandleFunc("GET /api/outputs/caption", s.handleCaption)
+	mux.HandleFunc("GET /api/outputs/video", s.handleVideo)
 	return mux
 }
 
@@ -386,6 +387,20 @@ func (s *Server) handleCaption(w http.ResponseWriter, r *http.Request) {
 		"job_id":  jobID,
 		"caption": string(data),
 	})
+}
+
+func (s *Server) handleVideo(w http.ResponseWriter, r *http.Request) {
+	jobID := filepath.Base(strings.TrimSpace(r.URL.Query().Get("job_id")))
+	if jobID == "" || jobID == "." {
+		writeError(w, http.StatusBadRequest, "job_id is required")
+		return
+	}
+	videoPath := filepath.Join(s.cfg.Paths.OutputVideos, jobID, jobID+".mp4")
+	if _, err := os.Stat(videoPath); err != nil {
+		writeError(w, http.StatusNotFound, "video not found for job")
+		return
+	}
+	http.ServeFile(w, r, videoPath)
 }
 
 func writeJSON(w http.ResponseWriter, status int, data any) {

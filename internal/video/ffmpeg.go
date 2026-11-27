@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -47,7 +48,7 @@ func (r *FFmpegRenderer) Name() string {
 
 // Render builds and runs FFmpeg to export payload.OutputVideo.
 func (r *FFmpegRenderer) Render(ctx context.Context, payload *JobPayload, _ string) error {
-	resolved, err := exec.LookPath(r.binPath)
+	resolved, err := r.resolveBin()
 	if err != nil {
 		return fmt.Errorf("ffmpeg binary %q not found: %w", r.binPath, err)
 	}
@@ -67,6 +68,16 @@ func (r *FFmpegRenderer) Render(ctx context.Context, payload *JobPayload, _ stri
 		return fmt.Errorf("ffmpeg failed: %w (stderr: %s)", err, strings.TrimSpace(stderr.String()))
 	}
 	return nil
+}
+
+func (r *FFmpegRenderer) resolveBin() (string, error) {
+	if info, err := os.Stat(r.binPath); err == nil && !info.IsDir() {
+		return r.binPath, nil
+	}
+	if p, err := exec.LookPath(r.binPath); err == nil {
+		return p, nil
+	}
+	return exec.LookPath("ffmpeg")
 }
 
 // BuildArgs constructs deterministic FFmpeg CLI arguments for clips/images, hook overlay, and BGM.
@@ -124,10 +135,15 @@ func (r *FFmpegRenderer) BuildArgs(payload *JobPayload) ([]string, error) {
 
 	videoMap := "[vcat]"
 	if payload.AIGenerated != nil && strings.TrimSpace(payload.AIGenerated.HookText) != "" {
-		escaped := escapeDrawtext(payload.AIGenerated.HookText)
+		wrapped := wrapText(payload.AIGenerated.HookText, 24)
+		escaped := escapeDrawtext(wrapped)
+		fontOpt := ""
+		if fontPath := detectSystemFont(); fontPath != "" {
+			fontOpt = fmt.Sprintf("fontfile='%s':", escapeFilterPath(fontPath))
+		}
 		fmt.Fprintf(&filter,
-			";[vcat]drawtext=text='%s':fontcolor=white:fontsize=54:box=1:boxcolor=black@0.65:boxborderw=20:x=(w-text_w)/2:y=h*0.12[vout]",
-			escaped,
+			";[vcat]drawtext=%stext='%s':fontcolor=white:fontsize=54:line_spacing=12:box=1:boxcolor=black@0.65:boxborderw=20:x=(w-text_w)/2:y=h*0.12[vout]",
+			fontOpt, escaped,
 		)
 		videoMap = "[vout]"
 	}
@@ -158,13 +174,58 @@ func isImageFile(path string) bool {
 	}
 }
 
+func detectSystemFont() string {
+	if runtime.GOOS != "windows" {
+		return ""
+	}
+	candidates := []string{
+		`C:\Windows\Fonts\arialbd.ttf`,
+		`C:\Windows\Fonts\arial.ttf`,
+		`C:\Windows\Fonts\seguisb.ttf`,
+		`C:\Windows\Fonts\segoeui.ttf`,
+	}
+	for _, c := range candidates {
+		if info, err := os.Stat(c); err == nil && !info.IsDir() {
+			return c
+		}
+	}
+	return ""
+}
+
+func escapeFilterPath(path string) string {
+	slashed := filepath.ToSlash(path)
+	return strings.ReplaceAll(slashed, ":", `\:`)
+}
+
+func wrapText(text string, maxCols int) string {
+	words := strings.Fields(strings.TrimSpace(text))
+	if len(words) == 0 || maxCols <= 0 {
+		return ""
+	}
+	var lines []string
+	var cur strings.Builder
+	for _, w := range words {
+		if cur.Len() > 0 && cur.Len()+1+len(w) > maxCols {
+			lines = append(lines, cur.String())
+			cur.Reset()
+		}
+		if cur.Len() > 0 {
+			cur.WriteByte(' ')
+		}
+		cur.WriteString(w)
+	}
+	if cur.Len() > 0 {
+		lines = append(lines, cur.String())
+	}
+	return strings.Join(lines, "\n")
+}
+
 func escapeDrawtext(text string) string {
 	r := strings.NewReplacer(
 		`\`, `\\`,
 		`:`, `\:`,
 		`'`, `\'`,
 		`%`, `\%`,
-		"\n", " ",
 		"\r", "",
 	)
 	return r.Replace(strings.TrimSpace(text))

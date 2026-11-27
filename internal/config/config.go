@@ -122,7 +122,7 @@ func Default() *Config {
 			FilmCraftBin:       "filmcraft",
 			FilmCraftMode:      "cli",
 			FilmCraftServerURL: "http://127.0.0.1:4123",
-			FFmpegBin:          "ffmpeg",
+			FFmpegBin:          "tools/ffmpeg/ffmpeg.exe",
 			Width:              1080,
 			Height:             1920,
 			FPS:                30,

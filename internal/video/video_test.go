@@ -48,7 +48,7 @@ func TestFFmpegBuildArgsAndCaptionBundle(t *testing.T) {
 		t.Fatalf("BuildArgs() failed: %v", err)
 	}
 	joined := strings.Join(args, " ")
-	if !strings.Contains(joined, "-loop 1") || !strings.Contains(joined, "drawtext=text='Foto sendiri\\: ribet?'") {
+	if !strings.Contains(joined, "-loop 1") || !strings.Contains(joined, "text='Foto sendiri\\: ribet?'") {
 		t.Fatalf("unexpected ffmpeg args: %s", joined)
 	}
 	if !strings.Contains(joined, "-map 1:a") {

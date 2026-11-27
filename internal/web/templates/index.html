@@ -181,6 +181,10 @@
         </tbody>
       </table>
       <div id="captionPreview" class="output-box" style="display:none;"></div>
+      <div id="videoPreviewWrap" style="display:none; margin-top:12px;">
+        <video id="videoPreview" controls style="max-height:420px; border-radius:8px; border:1px solid var(--border); background:#000;"></video>
+        <div style="margin-top:6px;"><a id="videoDownloadLink" href="#" download style="color:var(--accent); font-size:0.86rem;">Download MP4</a></div>
+      </div>
     </section>
   </main>
 
@@ -242,7 +246,8 @@
             ? `<span class="status-FAILED">${escapeHtml(j.error_message)}</span>`
             : `${escapeHtml(j.result_path || '-')}` +
               (j.job_type === 'affiliate_video' && j.status === 'DONE'
-                ? ` <button type="button" class="secondary" style="margin:0 0 0 6px; padding:3px 8px; font-size:0.78rem;" onclick="showCaption('${j.id}')">Lihat Caption</button>`
+                ? ` <button type="button" class="secondary" style="margin:0 0 0 6px; padding:3px 8px; font-size:0.78rem;" onclick="showCaption('${j.id}')">Lihat Caption</button>` +
+                  ` <button type="button" class="secondary" style="margin:0 0 0 4px; padding:3px 8px; font-size:0.78rem;" onclick="showVideo('${j.id}')">Putar Video</button>`
                 : '');
           return `<tr>
             <td>${escapeHtml(j.created_at_local || '')}</td>
@@ -285,6 +290,17 @@
       } catch (e) {
         box.textContent = 'Error: ' + e.message;
       }
+    }
+
+    function showVideo(jobId) {
+      const wrap = document.getElementById('videoPreviewWrap');
+      const vid = document.getElementById('videoPreview');
+      const dl = document.getElementById('videoDownloadLink');
+      const url = '/api/outputs/video?job_id=' + encodeURIComponent(jobId);
+      vid.src = url;
+      dl.href = url;
+      dl.download = jobId + '.mp4';
+      wrap.style.display = 'block';
     }
 
     document.getElementById('uploadForm').addEventListener('submit', async (ev) => {

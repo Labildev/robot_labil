@@ -141,4 +141,28 @@ func TestWebDashboardAPIs(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &jobs); err != nil || len(jobs) != 2 {
 		t.Fatalf("expected 2 jobs in list, got len=%d err=%v", len(jobs), err)
 	}
+
+	// 7. Output caption & video preview endpoints
+	outJobDir := filepath.Join(cfg.Paths.OutputVideos, "aff_demo")
+	if err := os.MkdirAll(outJobDir, 0o755); err != nil {
+		t.Fatalf("mkdir outJobDir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(outJobDir, "caption.txt"), []byte("Caption siap post"), 0o644); err != nil {
+		t.Fatalf("write caption: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(outJobDir, "aff_demo.mp4"), []byte("mp4-data"), 0o644); err != nil {
+		t.Fatalf("write video: %v", err)
+	}
+
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/outputs/caption?job_id=aff_demo", nil))
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "Caption siap post") {
+		t.Fatalf("unexpected caption response: code=%d body=%s", rec.Code, rec.Body.String())
+	}
+
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/outputs/video?job_id=aff_demo", nil))
+	if rec.Code != http.StatusOK || rec.Body.String() != "mp4-data" {
+		t.Fatalf("unexpected video response: code=%d body=%q", rec.Code, rec.Body.String())
+	}
 }

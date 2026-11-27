@@ -30,7 +30,7 @@ video:
   filmcraft_bin: "filmcraft"
   filmcraft_mode: "cli"
   filmcraft_server_url: "http://127.0.0.1:4123"
-  ffmpeg_bin: "ffmpeg"
+  ffmpeg_bin: "tools/ffmpeg/ffmpeg.exe"
   width: 1080
   height: 1920
   fps: 30
