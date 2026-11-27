@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -79,8 +80,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/docs/upload", s.handleDocUpload)
 	mux.HandleFunc("POST /api/docs/qa", s.handleDocQA)
 	mux.HandleFunc("GET /api/assets", s.handleAssets)
+	mux.HandleFunc("POST /api/assets/upload", s.handleAssetUpload)
 	mux.HandleFunc("POST /api/affiliate", s.handleAffiliate)
 	mux.HandleFunc("GET /api/outputs/caption", s.handleCaption)
+	mux.HandleFunc("GET /api/outputs/payload", s.handleOutputPayload)
 	mux.HandleFunc("GET /api/outputs/video", s.handleVideo)
 	return mux
 }
@@ -126,13 +129,28 @@ func (s *Server) handleIndex(w http.ResponseWriter, _ *http.Request) {
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	ollamaOK := s.llmClient != nil && s.llmClient.Health(r.Context()) == nil
 	piperOK := s.tts != nil && s.tts.Available()
+	ffmpegOK := isBinaryAvailable(s.cfg.Video.FFmpegBin, "ffmpeg")
 	writeJSON(w, http.StatusOK, map[string]any{
-		"app":             s.cfg.App.Name,
-		"model":           s.cfg.Ollama.Model,
-		"ollama_ok":       ollamaOK,
-		"piper_available": piperOK,
-		"max_concurrency": s.cfg.App.MaxConcurrency,
+		"app":              s.cfg.App.Name,
+		"model":            s.cfg.Ollama.Model,
+		"ollama_ok":        ollamaOK,
+		"piper_available":  piperOK,
+		"ffmpeg_available": ffmpegOK,
+		"max_concurrency":  s.cfg.App.MaxConcurrency,
 	})
+}
+
+func isBinaryAvailable(configured, fallback string) bool {
+	if strings.TrimSpace(configured) != "" {
+		if info, err := os.Stat(configured); err == nil && !info.IsDir() {
+			return true
+		}
+		if _, err := exec.LookPath(configured); err == nil {
+			return true
+		}
+	}
+	_, err := exec.LookPath(fallback)
+	return err == nil
 }
 
 type jobDTO struct {
@@ -146,7 +164,7 @@ type jobDTO struct {
 }
 
 func (s *Server) handleJobs(w http.ResponseWriter, r *http.Request) {
-	jobs, err := s.store.ListJobs(r.Context(), 30)
+	jobs, err := s.store.ListJobs(r.Context(), 50)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -167,13 +185,14 @@ func (s *Server) handleJobs(w http.ResponseWriter, r *http.Request) {
 }
 
 type docDTO struct {
-	ID        string `json:"id"`
-	Filename  string `json:"filename"`
-	WordCount int    `json:"word_count"`
+	ID             string `json:"id"`
+	Filename       string `json:"filename"`
+	WordCount      int    `json:"word_count"`
+	CreatedAtLocal string `json:"created_at_local"`
 }
 
 func (s *Server) handleDocs(w http.ResponseWriter, r *http.Request) {
-	docs, err := s.store.ListDocuments(r.Context(), 30)
+	docs, err := s.store.ListDocuments(r.Context(), 50)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -181,9 +200,10 @@ func (s *Server) handleDocs(w http.ResponseWriter, r *http.Request) {
 	out := make([]docDTO, 0, len(docs))
 	for _, d := range docs {
 		out = append(out, docDTO{
-			ID:        d.ID,
-			Filename:  d.Filename,
-			WordCount: d.WordCount,
+			ID:             d.ID,
+			Filename:       d.Filename,
+			WordCount:      d.WordCount,
+			CreatedAtLocal: d.CreatedAt.Local().Format("2006-01-02 15:04"),
 		})
 	}
 	writeJSON(w, http.StatusOK, out)
@@ -217,46 +237,9 @@ func (s *Server) handleDocSummary(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleDocUpload(w http.ResponseWriter, r *http.Request) {
-	r.Body = http.MaxBytesReader(w, r.Body, 50<<20)
-	if err := r.ParseMultipartForm(32 << 20); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid multipart upload: "+err.Error())
-		return
-	}
-	file, header, err := r.FormFile("file")
+	base, absDst, err := s.saveUploadedFile(w, r, s.cfg.Paths.InputDocs, 50<<20, doc.IsSupportedExt)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "missing form field 'file'")
-		return
-	}
-	defer file.Close()
-
-	base := filepath.Base(header.Filename)
-	if base == "" || base == "." || !doc.IsSupportedExt(base) {
-		writeError(w, http.StatusBadRequest, "supported formats: .pdf, .docx, .txt, .md")
-		return
-	}
-
-	if err := os.MkdirAll(s.cfg.Paths.InputDocs, 0o755); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	dstPath := filepath.Join(s.cfg.Paths.InputDocs, base)
-	absDst, err := filepath.Abs(dstPath)
-	if err != nil {
-		absDst = dstPath
-	}
-
-	out, err := os.Create(absDst)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	if _, err := io.Copy(out, file); err != nil {
-		_ = out.Close()
-		writeError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	if err := out.Close(); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -270,6 +253,70 @@ func (s *Server) handleDocUpload(w http.ResponseWriter, r *http.Request) {
 		"filename": base,
 		"status":   queue.StatusQueued,
 	})
+}
+
+func (s *Server) handleAssetUpload(w http.ResponseWriter, r *http.Request) {
+	base, absDst, err := s.saveUploadedFile(w, r, s.cfg.Paths.AffiliateAssets, 200<<20, isSupportedAssetExt)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	rel, relErr := filepath.Rel(".", absDst)
+	if relErr != nil || strings.HasPrefix(rel, "..") {
+		rel = absDst
+	}
+	writeJSON(w, http.StatusCreated, map[string]any{
+		"filename": base,
+		"path":     filepath.ToSlash(rel),
+	})
+}
+
+func (s *Server) saveUploadedFile(w http.ResponseWriter, r *http.Request, targetDir string, maxBytes int64, allow func(string) bool) (string, string, error) {
+	r.Body = http.MaxBytesReader(w, r.Body, maxBytes)
+	if err := r.ParseMultipartForm(32 << 20); err != nil {
+		return "", "", fmt.Errorf("invalid multipart upload: %w", err)
+	}
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		return "", "", fmt.Errorf("missing form field 'file'")
+	}
+	defer file.Close()
+
+	base := filepath.Base(header.Filename)
+	if base == "" || base == "." || !allow(base) {
+		return "", "", fmt.Errorf("unsupported file extension for %q", base)
+	}
+
+	if err := os.MkdirAll(targetDir, 0o755); err != nil {
+		return "", "", err
+	}
+	dstPath := filepath.Join(targetDir, base)
+	absDst, err := filepath.Abs(dstPath)
+	if err != nil {
+		absDst = dstPath
+	}
+
+	out, err := os.Create(absDst)
+	if err != nil {
+		return "", "", err
+	}
+	if _, err := io.Copy(out, file); err != nil {
+		_ = out.Close()
+		return "", "", err
+	}
+	if err := out.Close(); err != nil {
+		return "", "", err
+	}
+	return base, absDst, nil
+}
+
+func isSupportedAssetExt(path string) bool {
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".mp4", ".mov", ".mkv", ".webm", ".avi", ".jpg", ".jpeg", ".png", ".webp", ".mp3", ".wav", ".m4a", ".aac":
+		return true
+	default:
+		return false
+	}
 }
 
 func (s *Server) handleDocQA(w http.ResponseWriter, r *http.Request) {
@@ -387,6 +434,23 @@ func (s *Server) handleCaption(w http.ResponseWriter, r *http.Request) {
 		"job_id":  jobID,
 		"caption": string(data),
 	})
+}
+
+func (s *Server) handleOutputPayload(w http.ResponseWriter, r *http.Request) {
+	jobID := filepath.Base(strings.TrimSpace(r.URL.Query().Get("job_id")))
+	if jobID == "" || jobID == "." {
+		writeError(w, http.StatusBadRequest, "job_id is required")
+		return
+	}
+	payloadPath := filepath.Join(s.cfg.Paths.OutputVideos, jobID, "job_payload.json")
+	data, err := os.ReadFile(payloadPath)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "job_payload.json not found for job")
+		return
+	}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(data)
 }
 
 func (s *Server) handleVideo(w http.ResponseWriter, r *http.Request) {

@@ -80,10 +80,10 @@ func TestWebDashboardAPIs(t *testing.T) {
 	}
 	h := srv.Handler()
 
-	// 1. Dashboard HTML
+	// 1. Dashboard HTML includes separated Doc Q&A and Affiliate workspaces
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
-	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "Robot Labil") {
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "view-docs") || !strings.Contains(rec.Body.String(), "view-affiliate") {
 		t.Fatalf("unexpected index response: code=%d", rec.Code)
 	}
 
@@ -164,5 +164,28 @@ func TestWebDashboardAPIs(t *testing.T) {
 	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/outputs/video?job_id=aff_demo", nil))
 	if rec.Code != http.StatusOK || rec.Body.String() != "mp4-data" {
 		t.Fatalf("unexpected video response: code=%d body=%q", rec.Code, rec.Body.String())
+	}
+
+	// 8. Asset upload + output job_payload.json endpoint
+	var assetBuf bytes.Buffer
+	amw := multipart.NewWriter(&assetBuf)
+	afw, _ := amw.CreateFormFile("file", "demo_clip.mp4")
+	_, _ = afw.Write([]byte("video-bytes"))
+	_ = amw.Close()
+	assetReq := httptest.NewRequest(http.MethodPost, "/api/assets/upload", &assetBuf)
+	assetReq.Header.Set("Content-Type", amw.FormDataContentType())
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, assetReq)
+	if rec.Code != http.StatusCreated || !strings.Contains(rec.Body.String(), "demo_clip.mp4") {
+		t.Fatalf("unexpected asset upload response: code=%d body=%s", rec.Code, rec.Body.String())
+	}
+
+	if err := os.WriteFile(filepath.Join(outJobDir, "job_payload.json"), []byte(`{"job_id":"aff_demo","product_name":"Tripod"}`), 0o644); err != nil {
+		t.Fatalf("write job_payload.json: %v", err)
+	}
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/outputs/payload?job_id=aff_demo", nil))
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "aff_demo") {
+		t.Fatalf("unexpected payload response: code=%d body=%s", rec.Code, rec.Body.String())
 	}
 }

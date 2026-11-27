@@ -3,192 +3,640 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Robot Labil — 100% Local AI Dashboard</title>
+  <title>Robot Labil — 100% Local AI Workspace</title>
   <style>
     :root {
-      --bg: #0d1117;
-      --card: #161b22;
-      --border: #30363d;
-      --text: #e6edf3;
-      --muted: #8b949e;
-      --accent: #2f81f7;
-      --ok: #3fb950;
-      --warn: #d29922;
-      --err: #f85149;
+      --bg: #090d14;
+      --sidebar: #0e141f;
+      --surface: #131b29;
+      --surface-2: #192436;
+      --border: #25334a;
+      --text: #eef3fb;
+      --muted: #8da0bd;
+      --doc-accent: #38bdf8;
+      --aff-accent: #a78bfa;
+      --ok: #34d399;
+      --warn: #fbbf24;
+      --err: #f87171;
+      --shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
     }
     * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
     body {
-      margin: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      background: var(--bg);
+      font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+      background: radial-gradient(circle at top right, rgba(56,189,248,0.08), transparent 40%),
+                  radial-gradient(circle at bottom left, rgba(167,139,250,0.08), transparent 40%),
+                  var(--bg);
       color: var(--text);
-      line-height: 1.5;
-    }
-    header {
-      padding: 16px 24px;
-      border-bottom: 1px solid var(--border);
-      background: var(--card);
       display: flex;
-      flex-wrap: wrap;
+      min-height: 100vh;
+    }
+
+    /* Sidebar Navigation */
+    .sidebar {
+      width: 260px;
+      flex-shrink: 0;
+      background: var(--sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 20px 14px;
+      gap: 20px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 6px 10px;
+    }
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--doc-accent), var(--aff-accent));
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      color: #090d14;
+      font-size: 1rem;
+    }
+    .brand-text h1 { margin: 0; font-size: 1.02rem; letter-spacing: 0.2px; }
+    .brand-text span { font-size: 0.75rem; color: var(--muted); }
+
+    .nav-group { display: flex; flex-direction: column; gap: 6px; }
+    .nav-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      padding: 4px 10px;
+    }
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 11px 12px;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.92rem;
+      font-weight: 600;
+      text-align: left;
+      transition: all 0.16s ease;
+    }
+    .nav-btn:hover { background: var(--surface); color: var(--text); }
+    .nav-btn.active[data-tab="docs"] {
+      background: rgba(56, 189, 248, 0.12);
+      border-color: rgba(56, 189, 248, 0.4);
+      color: var(--doc-accent);
+    }
+    .nav-btn.active[data-tab="affiliate"] {
+      background: rgba(167, 139, 250, 0.12);
+      border-color: rgba(167, 139, 250, 0.4);
+      color: var(--aff-accent);
+    }
+    .nav-btn.active[data-tab="queue"] {
+      background: rgba(52, 211, 153, 0.12);
+      border-color: rgba(52, 211, 153, 0.4);
+      color: var(--ok);
+    }
+    .pill-count {
+      font-size: 0.74rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--surface-2);
+      color: var(--text);
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.78rem;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .status-row { display: flex; align-items: center; justify-content: space-between; color: var(--muted); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+    .dot.ok { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+    .dot.err { background: var(--err); }
+    .dot.warn { background: var(--warn); }
+
+    /* Main Workspace Area */
+    .main-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .topbar {
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(14, 20, 31, 0.85);
+      backdrop-filter: blur(8px);
+      display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 12px;
+      flex-wrap: wrap;
     }
-    header h1 { margin: 0; font-size: 1.2rem; }
-    .badges { display: flex; gap: 8px; flex-wrap: wrap; font-size: 0.85rem; }
-    .badge {
-      padding: 4px 10px;
+    .topbar-title h2 { margin: 0; font-size: 1.15rem; }
+    .topbar-title p { margin: 2px 0 0; font-size: 0.82rem; color: var(--muted); }
+    .active-worker-pill {
+      font-size: 0.8rem;
+      padding: 6px 12px;
       border-radius: 999px;
       border: 1px solid var(--border);
-      background: #0d1117;
+      background: var(--surface);
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
-    .badge.ok { border-color: var(--ok); color: var(--ok); }
-    .badge.err { border-color: var(--err); color: var(--err); }
-    main {
-      max-width: 1200px;
-      margin: 24px auto;
-      padding: 0 16px;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-      gap: 20px;
-    }
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 18px;
-    }
-    .card.full { grid-column: 1 / -1; }
-    h2 { margin-top: 0; font-size: 1.05rem; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
-    label { display: block; font-size: 0.85rem; color: var(--muted); margin: 10px 0 4px; }
-    input, textarea, select {
-      width: 100%;
-      padding: 9px 10px;
-      background: #0d1117;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text);
-      font-size: 0.92rem;
-    }
-    button {
-      margin-top: 12px;
-      padding: 9px 14px;
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 0.9rem;
-    }
-    button.secondary { background: #21262d; border: 1px solid var(--border); }
-    button:disabled { opacity: 0.6; cursor: wait; }
-    .output-box {
-      margin-top: 12px;
-      padding: 12px;
-      background: #0d1117;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      white-space: pre-wrap;
-      font-size: 0.88rem;
-      max-height: 280px;
+
+    .content {
+      padding: 22px 24px;
+      flex: 1;
       overflow-y: auto;
     }
-    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; margin-top: 8px; }
-    th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
-    th { color: var(--muted); font-weight: 600; }
-    .status-DONE { color: var(--ok); font-weight: 600; }
-    .status-FAILED { color: var(--err); font-weight: 600; }
-    .status-PROCESSING { color: var(--warn); font-weight: 600; }
-    .status-QUEUED { color: var(--accent); font-weight: 600; }
-    .hint { font-size: 0.8rem; color: var(--muted); margin-top: 6px; }
+    .view { display: none; }
+    .view.active { display: block; }
+
+    .split-grid {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+    .card h3 {
+      margin: 0 0 12px;
+      font-size: 0.98rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Dropzone */
+    .dropzone {
+      border: 1.5px dashed var(--border);
+      border-radius: 12px;
+      padding: 20px 14px;
+      text-align: center;
+      background: rgba(9, 13, 20, 0.55);
+      cursor: pointer;
+      transition: all 0.16s ease;
+    }
+    .dropzone:hover, .dropzone.dragover {
+      border-color: var(--doc-accent);
+      background: rgba(56, 189, 248, 0.08);
+    }
+    .dropzone.aff:hover, .dropzone.aff.dragover {
+      border-color: var(--aff-accent);
+      background: rgba(167, 139, 250, 0.08);
+    }
+    .dropzone p { margin: 0; font-size: 0.88rem; }
+    .dropzone span { font-size: 0.76rem; color: var(--muted); }
+
+    label { display: block; font-size: 0.8rem; color: var(--muted); margin: 12px 0 5px; font-weight: 600; }
+    input, textarea, select {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.9rem;
+      font-family: inherit;
+    }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: var(--doc-accent); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 9px 14px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.86rem;
+      transition: opacity 0.15s;
+    }
+    .btn:disabled { opacity: 0.55; cursor: wait; }
+    .btn-doc { background: var(--doc-accent); color: #06131f; }
+    .btn-aff { background: var(--aff-accent); color: #120926; }
+    .btn-ghost { background: var(--surface-2); color: var(--text); border-color: var(--border); }
+    .btn-sm { padding: 5px 10px; font-size: 0.78rem; }
+
+    /* Document Library List */
+    .doc-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 12px;
+      max-height: 360px;
+      overflow-y: auto;
+    }
+    .doc-item {
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .doc-item:hover { border-color: var(--muted); }
+    .doc-item.active { border-color: var(--doc-accent); background: rgba(56, 189, 248, 0.08); }
+    .doc-item-title { font-size: 0.88rem; font-weight: 600; word-break: break-word; }
+    .doc-item-meta { font-size: 0.75rem; color: var(--muted); margin-top: 3px; }
+
+    /* Chat Q&A Workspace */
+    .chat-shell {
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 155px);
+      min-height: 520px;
+    }
+    .chat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .bubble {
+      max-width: 86%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      white-space: pre-wrap;
+      line-height: 1.55;
+    }
+    .bubble.user {
+      align-self: flex-end;
+      background: rgba(56, 189, 248, 0.16);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+    }
+    .bubble.bot {
+      align-self: flex-start;
+      background: var(--bg);
+      border: 1px solid var(--border);
+    }
+    .bubble.summary {
+      max-width: 100%;
+      background: #0b1523;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+    .chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .chip {
+      font-size: 0.76rem;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      cursor: pointer;
+    }
+    .chip:hover { border-color: var(--doc-accent); }
+    .chat-input-row { display: flex; gap: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+
+    /* Affiliate Studio */
+    .asset-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; max-height: 120px; overflow-y: auto; }
+    .asset-chip {
+      font-size: 0.75rem;
+      padding: 4px 9px;
+      border-radius: 6px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .asset-chip:hover { border-color: var(--aff-accent); color: var(--text); }
+    .studio-preview {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 18px;
+      align-items: start;
+      margin-top: 14px;
+    }
+    .phone-frame {
+      background: #000;
+      border: 2px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      aspect-ratio: 9 / 16;
+      display: grid;
+      place-items: center;
+    }
+    .phone-frame video { width: 100%; height: 100%; object-fit: contain; }
+    .copy-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    .copy-card h4 { margin: 0 0 6px; font-size: 0.78rem; text-transform: uppercase; color: var(--aff-accent); letter-spacing: 0.06em; }
+    .copy-card p { margin: 0; font-size: 0.88rem; white-space: pre-wrap; }
+
+    /* Queue Table */
+    .filter-bar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .badge-status {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .st-DONE { background: rgba(52,211,153,0.14); color: var(--ok); }
+    .st-FAILED { background: rgba(248,113,113,0.14); color: var(--err); }
+    .st-PROCESSING { background: rgba(251,191,36,0.14); color: var(--warn); }
+    .st-QUEUED { background: rgba(56,189,248,0.14); color: var(--doc-accent); }
+
+    .hint { font-size: 0.78rem; color: var(--muted); margin-top: 6px; }
+    @media (max-width: 960px) {
+      body { flex-direction: column; }
+      .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+      .split-grid, .studio-preview { grid-template-columns: 1fr; }
+      .chat-shell { height: auto; min-height: 460px; }
+    }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Robot Labil — 100% Full Local Dashboard</h1>
-    <div class="badges" id="healthBadges">
-      <span class="badge">Memuat status...</span>
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-icon">RL</div>
+      <div class="brand-text">
+        <h1>Robot Labil</h1>
+        <span>100% Full Local AI</span>
+      </div>
     </div>
-  </header>
 
-  <main>
-    <section class="card">
-      <h2>1. Asisten Dokumen Offline</h2>
-      <form id="uploadForm">
-        <label for="docFile">Unggah Dokumen (.pdf, .docx, .txt, .md)</label>
-        <input type="file" id="docFile" name="file" accept=".pdf,.docx,.txt,.md" required>
-        <button type="submit">Kirim ke Antrean Ringkas</button>
-      </form>
-      <div id="uploadMsg" class="hint"></div>
+    <div class="nav-group">
+      <div class="nav-label">Workspace Terpisah</div>
+      <button class="nav-btn active" data-tab="docs" onclick="switchTab('docs')">
+        <span>Tanya Jawab PDF / Doc</span>
+        <span class="pill-count" id="docCountBadge">0</span>
+      </button>
+      <button class="nav-btn" data-tab="affiliate" onclick="switchTab('affiliate')">
+        <span>Otomatisasi Affiliate</span>
+        <span class="pill-count" id="affCountBadge">0</span>
+      </button>
+    </div>
 
-      <label for="docSelect">Pilih Dokumen untuk Ringkasan / Q&amp;A</label>
-      <select id="docSelect"></select>
-      <div style="display:flex; gap:8px;">
-        <button type="button" class="secondary" onclick="viewSummary()">Lihat Ringkasan</button>
-        <button type="button" class="secondary" onclick="refreshDocs()">Refresh Daftar</button>
+    <div class="nav-group">
+      <div class="nav-label">Sistem</div>
+      <button class="nav-btn" data-tab="queue" onclick="switchTab('queue')">
+        <span>Antrean &amp; Log Serial</span>
+        <span class="pill-count" id="queueCountBadge">0</span>
+      </button>
+    </div>
+
+    <div class="sidebar-footer" id="sysFooter">
+      <div class="status-row"><span><span class="dot warn"></span>Ollama</span><span>Memuat...</span></div>
+    </div>
+  </aside>
+
+  <div class="main-wrap">
+    <header class="topbar">
+      <div class="topbar-title">
+        <h2 id="pageTitle">Workspace Tanya Jawab PDF &amp; Dokumen</h2>
+        <p id="pageSubtitle">Unggah PDF/DOCX lokal, buat ringkasan otomatis, dan tanya jawab 100% offline dengan Ollama.</p>
       </div>
-
-      <form id="qaForm">
-        <label for="qaQuestion">Tanya Jawab Isi Dokumen (Offline Ollama)</label>
-        <input type="text" id="qaQuestion" placeholder="Contoh: Apa kesimpulan utama dokumen ini?" required>
-        <button type="submit" id="qaBtn">Tanya AI Lokal</button>
-      </form>
-      <div id="docAnswer" class="output-box" style="display:none;"></div>
-    </section>
-
-    <section class="card">
-      <h2>2. Pipeline Video Affiliate</h2>
-      <form id="affiliateForm">
-        <label for="prodName">Nama Produk</label>
-        <input type="text" id="prodName" placeholder="Contoh: Mini Tripod Bluetooth 360" required>
-
-        <label for="prodPoints">Keunggulan Produk (pisahkan baris atau koma)</label>
-        <textarea id="prodPoints" rows="3" placeholder="Ringan muat di tas&#10;Remote shutter Bluetooth&#10;Tinggi hingga 120 cm"></textarea>
-
-        <label for="prodDuration">Target Durasi (detik)</label>
-        <input type="number" id="prodDuration" value="20" min="5" max="120">
-
-        <label for="prodClips">Path Klip / Foto Produk (pisahkan baris atau koma)</label>
-        <textarea id="prodClips" rows="2" placeholder="storage/affiliate_assets/clip1.mp4" required></textarea>
-        <div class="hint" id="assetHints">Memeriksa aset lokal...</div>
-
-        <label for="prodBgm">Path Musik Latar (opsional)</label>
-        <input type="text" id="prodBgm" placeholder="storage/affiliate_assets/bgm.mp3">
-
-        <button type="submit">Masuk Antrean Render</button>
-      </form>
-      <div id="affMsg" class="hint"></div>
-    </section>
-
-    <section class="card full">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h2 style="border:none; margin:0; padding:0;">3. Antrean Serial &amp; Output Lokal (Concurrency = 1)</h2>
-        <button type="button" class="secondary" style="margin:0;" onclick="refreshJobs()">Refresh</button>
+      <div class="active-worker-pill" id="workerStatusPill">
+        <span class="dot ok"></span><span>Worker Serial Siap (Concurrency = 1)</span>
       </div>
-      <table>
-        <thead>
-          <tr>
-            <th>Waktu</th>
-            <th>Tipe</th>
-            <th>Status</th>
-            <th>Sumber</th>
-            <th>Output / Error</th>
-          </tr>
-        </thead>
-        <tbody id="jobsBody">
-          <tr><td colspan="5">Memuat...</td></tr>
-        </tbody>
-      </table>
-      <div id="captionPreview" class="output-box" style="display:none;"></div>
-      <div id="videoPreviewWrap" style="display:none; margin-top:12px;">
-        <video id="videoPreview" controls style="max-height:420px; border-radius:8px; border:1px solid var(--border); background:#000;"></video>
-        <div style="margin-top:6px;"><a id="videoDownloadLink" href="#" download style="color:var(--accent); font-size:0.86rem;">Download MP4</a></div>
-      </div>
-    </section>
-  </main>
+    </header>
+
+    <main class="content">
+      <!-- VIEW 1: TANYA JAWAB PDF / DOKUMEN -->
+      <section class="view active" id="view-docs">
+        <div class="split-grid">
+          <div class="card">
+            <h3>Unggah &amp; Pustaka Dokumen</h3>
+            <div class="dropzone" id="docDropzone" onclick="document.getElementById('docFileInput').click()">
+              <p><strong>Klik atau Tarik File ke Sini</strong></p>
+              <span>Mendukung .pdf, .docx, .txt, .md (100% offline)</span>
+              <input type="file" id="docFileInput" accept=".pdf,.docx,.txt,.md" style="display:none">
+            </div>
+            <div class="hint" id="docUploadStatus"></div>
+
+            <label for="docSearch">Cari Dokumen Tersimpan</label>
+            <input type="text" id="docSearch" placeholder="Ketik nama file..." oninput="renderDocList()">
+
+            <div class="doc-list" id="docList">
+              <div class="hint">Belum ada dokumen diproses.</div>
+            </div>
+          </div>
+
+          <div class="card chat-shell">
+            <div class="chat-header">
+              <div>
+                <strong id="activeDocTitle">Pilih dokumen di sebelah kiri</strong>
+                <div class="hint" id="activeDocMeta" style="margin-top:2px;">Belum ada dokumen aktif untuk Q&amp;A</div>
+              </div>
+              <div style="display:flex; gap:8px;">
+                <button class="btn btn-ghost btn-sm" id="btnViewSummary" onclick="loadActiveSummary()" disabled>Lihat Ringkasan</button>
+                <button class="btn btn-ghost btn-sm" onclick="clearActiveChat()">Bersihkan Chat</button>
+              </div>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+              <div class="bubble bot">Halo! Pilih dokumen yang sudah diringkas di panel kiri (atau unggah PDF/DOCX baru), lalu ajukan pertanyaan tentang isinya di bawah ini.</div>
+            </div>
+
+            <div>
+              <div class="chip-row">
+                <button type="button" class="chip" onclick="useQuickQuestion('Apa ringkasan dan poin paling penting dari dokumen ini?')">Poin Utama</button>
+                <button type="button" class="chip" onclick="useQuickQuestion('Sebutkan angka, harga, tanggal, atau batasan penting yang tercantum.')">Angka &amp; Fakta</button>
+                <button type="button" class="chip" onclick="useQuickQuestion('Apa kesimpulan dan langkah tindak lanjut yang disarankan?')">Kesimpulan</button>
+              </div>
+              <form class="chat-input-row" id="qaForm">
+                <input type="text" id="qaInput" placeholder="Tanyakan isi dokumen ini..." required>
+                <button type="submit" class="btn btn-doc" id="qaSubmitBtn">Kirim</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 2: OTOMATISASI AFFILIATE -->
+      <section class="view" id="view-affiliate">
+        <div class="split-grid">
+          <div class="card">
+            <h3>Buat Konten Video Affiliate</h3>
+            <form id="affiliateForm">
+              <label for="affName">Nama Produk</label>
+              <input type="text" id="affName" placeholder="Contoh: Mini Tripod Bluetooth 360" required>
+
+              <label for="affPoints">Keunggulan Produk (1 poin per baris / koma)</label>
+              <textarea id="affPoints" rows="3" placeholder="Ringan muat di tas kecil&#10;Remote shutter Bluetooth&#10;Tinggi maksimal 120 cm"></textarea>
+
+              <label for="affDuration">Target Durasi (detik)</label>
+              <input type="number" id="affDuration" value="20" min="5" max="120">
+
+              <label>Upload Aset Klip / Foto / Musik Baru</label>
+              <div class="dropzone aff" id="assetDropzone" onclick="document.getElementById('assetFileInput').click()">
+                <p><strong>Tarik atau Klik Upload Aset Media</strong></p>
+                <span>.mp4, .mov, .jpg, .png, .mp3, .wav → storage/affiliate_assets/</span>
+                <input type="file" id="assetFileInput" accept=".mp4,.mov,.mkv,.webm,.jpg,.jpeg,.png,.webp,.mp3,.wav,.m4a" style="display:none">
+              </div>
+              <div class="hint" id="assetUploadStatus"></div>
+
+              <label for="affClips">Klip / Foto Produk Terpilih (klik chip di bawah untuk menambah)</label>
+              <textarea id="affClips" rows="2" placeholder="storage/affiliate_assets/produk.jpg" required></textarea>
+              <div class="asset-chips" id="assetChips"></div>
+
+              <label for="affBgm">Musik Latar BGM (opsional, jika Piper TTS tidak dipakai/audio tambahan)</label>
+              <input type="text" id="affBgm" placeholder="storage/affiliate_assets/bgm.mp3">
+
+              <button type="submit" class="btn btn-aff" style="width:100%; margin-top:14px;">Generate Naskah + Render Video 9:16</button>
+            </form>
+            <div class="hint" id="affFormStatus"></div>
+          </div>
+
+          <div class="card">
+            <h3>
+              <span>Hasil Studio Affiliate</span>
+              <button class="btn btn-ghost btn-sm" onclick="refreshAll()">Refresh</button>
+            </h3>
+
+            <label for="affJobSelect">Pilih Job Affiliate</label>
+            <select id="affJobSelect" onchange="inspectAffiliateJob(this.value)">
+              <option value="">Belum ada job affiliate</option>
+            </select>
+
+            <div id="affStudioEmpty" class="hint" style="margin-top:16px;">
+              Pilih job berstatus <strong>DONE</strong> untuk memutar video 9:16, menyalin hook/caption/hashtag, dan cek checklist keranjang kuning.
+            </div>
+
+            <div class="studio-preview" id="affStudioPanel" style="display:none;">
+              <div>
+                <div class="phone-frame">
+                  <video id="studioVideo" controls playsinline></video>
+                </div>
+                <div style="display:flex; gap:8px; margin-top:10px;">
+                  <a id="studioDownload" class="btn btn-ghost btn-sm" style="flex:1; text-decoration:none;" href="#" download>Download MP4</a>
+                </div>
+              </div>
+
+              <div>
+                <div class="copy-card">
+                  <h4>Hook Overlay</h4>
+                  <p id="studioHook">-</p>
+                </div>
+                <div class="copy-card">
+                  <h4>Caption &amp; Hashtags</h4>
+                  <p id="studioCaption">-</p>
+                  <button type="button" class="btn btn-aff btn-sm" style="margin-top:8px;" onclick="copyCaptionBundle()">Copy Caption + Hashtags</button>
+                </div>
+                <div class="copy-card">
+                  <h4>Naskah Voiceover (Piper TTS)</h4>
+                  <p id="studioVoiceover">-</p>
+                </div>
+                <div class="copy-card">
+                  <h4>Checklist Keranjang Kuning</h4>
+                  <p id="studioChecklist">1. Upload MP4 ke TikTok Draft.<br>2. Tambah Tautan → Produk → pilih produk.<br>3. Tempel caption &amp; posting.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 3: ANTREAN & LOG SERIAL -->
+      <section class="view" id="view-queue">
+        <div class="card">
+          <h3>
+            <span>Monitor Antrean Serial (Concurrency = 1)</span>
+            <button class="btn btn-ghost btn-sm" onclick="refreshAll()">Refresh</button>
+          </h3>
+          <div class="filter-bar">
+            <button class="btn btn-ghost btn-sm" onclick="setJobFilter('all')">Semua</button>
+            <button class="btn btn-ghost btn-sm" onclick="setJobFilter('doc_summary')">Dokumen</button>
+            <button class="btn btn-ghost btn-sm" onclick="setJobFilter('affiliate_video')">Affiliate</button>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Waktu</th>
+                <th>Pipeline</th>
+                <th>Status</th>
+                <th>Sumber</th>
+                <th>Output / Error</th>
+              </tr>
+            </thead>
+            <tbody id="queueTableBody">
+              <tr><td colspan="5">Memuat...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
 
   <script>
+    const state = {
+      activeTab: 'docs',
+      docs: [],
+      jobs: [],
+      assets: [],
+      selectedDocId: '',
+      jobFilter: 'all',
+      chatsByDoc: {},
+      currentCaptionCopy: ''
+    };
+
+    const tabMeta = {
+      docs: {
+        title: 'Workspace Tanya Jawab PDF & Dokumen',
+        subtitle: 'Unggah PDF/DOCX lokal, buat ringkasan otomatis, dan tanya jawab 100% offline dengan Ollama.'
+      },
+      affiliate: {
+        title: 'Studio Otomatisasi Konten Affiliate',
+        subtitle: 'Generate naskah copywriting, sintesis voiceover Piper TTS, dan render video 9:16 lokal.'
+      },
+      queue: {
+        title: 'Monitor Antrean Serial & Log Sistem',
+        subtitle: 'Seluruh proses berat (LLM, TTS, Render) berjalan bergantian satu per satu untuk menjaga batas 8 GB RAM / 4 GB VRAM.'
+      }
+    };
+
+    function switchTab(tab) {
+      state.activeTab = tab;
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+      document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + tab));
+      document.getElementById('pageTitle').textContent = tabMeta[tab].title;
+      document.getElementById('pageSubtitle').textContent = tabMeta[tab].subtitle;
+      if (location.hash !== '#' + tab) history.replaceState(null, '', '#' + tab);
+    }
+
     async function fetchJSON(url, opts) {
       const res = await fetch(url, opts);
       const data = await res.json();
@@ -196,150 +644,296 @@
       return data;
     }
 
-    async function refreshHealth() {
-      try {
-        const h = await fetchJSON('/api/health');
-        const badges = document.getElementById('healthBadges');
-        badges.innerHTML =
-          `<span class="badge ${h.ollama_ok ? 'ok' : 'err'}">Ollama: ${h.ollama_ok ? 'Online (' + h.model + ')' : 'Offline'}</span>` +
-          `<span class="badge ${h.piper_available ? 'ok' : ''}">Piper TTS: ${h.piper_available ? 'Siap' : 'Belum terpasang'}</span>` +
-          `<span class="badge">Serial Queue: ${h.max_concurrency}</span>`;
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    async function refreshDocs() {
-      try {
-        const docs = await fetchJSON('/api/docs');
-        const sel = document.getElementById('docSelect');
-        sel.innerHTML = docs.length
-          ? docs.map(d => `<option value="${d.id}">${d.filename} (${d.word_count} kata)</option>`).join('')
-          : '<option value="">Belum ada dokumen diproses</option>';
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    async function refreshAssets() {
-      try {
-        const assets = await fetchJSON('/api/assets');
-        const el = document.getElementById('assetHints');
-        el.textContent = assets.length
-          ? 'Aset tersedia: ' + assets.slice(0, 6).join(', ')
-          : 'Taruh klip/foto/bgm ke storage/affiliate_assets/';
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    async function refreshJobs() {
-      try {
-        const jobs = await fetchJSON('/api/jobs');
-        const body = document.getElementById('jobsBody');
-        if (!jobs.length) {
-          body.innerHTML = '<tr><td colspan="5">Belum ada antrean job.</td></tr>';
-          return;
-        }
-        body.innerHTML = jobs.map(j => {
-          const outHtml = j.error_message
-            ? `<span class="status-FAILED">${escapeHtml(j.error_message)}</span>`
-            : `${escapeHtml(j.result_path || '-')}` +
-              (j.job_type === 'affiliate_video' && j.status === 'DONE'
-                ? ` <button type="button" class="secondary" style="margin:0 0 0 6px; padding:3px 8px; font-size:0.78rem;" onclick="showCaption('${j.id}')">Lihat Caption</button>` +
-                  ` <button type="button" class="secondary" style="margin:0 0 0 4px; padding:3px 8px; font-size:0.78rem;" onclick="showVideo('${j.id}')">Putar Video</button>`
-                : '');
-          return `<tr>
-            <td>${escapeHtml(j.created_at_local || '')}</td>
-            <td>${escapeHtml(j.job_type)}</td>
-            <td class="status-${escapeHtml(j.status)}">${escapeHtml(j.status)}</td>
-            <td>${escapeHtml(j.source_path)}</td>
-            <td>${outHtml}</td>
-          </tr>`;
-        }).join('');
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
     function escapeHtml(str) {
       return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
     }
 
-    async function viewSummary() {
-      const id = document.getElementById('docSelect').value;
-      if (!id) return;
-      const box = document.getElementById('docAnswer');
-      box.style.display = 'block';
-      box.textContent = 'Memuat ringkasan...';
+    async function refreshHealth() {
       try {
-        const res = await fetchJSON('/api/docs/summary?id=' + encodeURIComponent(id));
-        box.textContent = res.summary_markdown;
-      } catch (e) {
-        box.textContent = 'Error: ' + e.message;
+        const h = await fetchJSON('/api/health');
+        const dot = ok => `<span class="dot ${ok ? 'ok' : 'err'}"></span>`;
+        document.getElementById('sysFooter').innerHTML = `
+          <div class="status-row"><span>${dot(h.ollama_ok)}Ollama (${escapeHtml(h.model)})</span><span>${h.ollama_ok ? 'Online' : 'Offline'}</span></div>
+          <div class="status-row"><span>${dot(h.piper_available)}Piper TTS</span><span>${h.piper_available ? 'Siap' : 'Off'}</span></div>
+          <div class="status-row"><span>${dot(h.ffmpeg_available)}FFmpeg</span><span>${h.ffmpeg_available ? 'Siap' : 'Off'}</span></div>
+        `;
+      } catch (e) { console.error(e); }
+    }
+
+    async function refreshDocs() {
+      state.docs = await fetchJSON('/api/docs');
+      document.getElementById('docCountBadge').textContent = state.docs.length;
+      if (!state.selectedDocId && state.docs.length > 0) {
+        selectDoc(state.docs[0].id);
+      } else {
+        renderDocList();
       }
     }
 
-    async function showCaption(jobId) {
-      const box = document.getElementById('captionPreview');
-      box.style.display = 'block';
-      box.textContent = 'Memuat caption.txt...';
+    function renderDocList() {
+      const q = document.getElementById('docSearch').value.trim().toLowerCase();
+      const filtered = state.docs.filter(d => !q || d.filename.toLowerCase().includes(q));
+      const listEl = document.getElementById('docList');
+      if (!filtered.length) {
+        listEl.innerHTML = '<div class="hint">Tidak ada dokumen yang cocok.</div>';
+        return;
+      }
+      listEl.innerHTML = filtered.map(d => `
+        <div class="doc-item ${d.id === state.selectedDocId ? 'active' : ''}" onclick="selectDoc('${d.id}')">
+          <div class="doc-item-title">${escapeHtml(d.filename)}</div>
+          <div class="doc-item-meta">${d.word_count} kata • ${escapeHtml(d.created_at_local || '')}</div>
+        </div>
+      `).join('');
+    }
+
+    function selectDoc(docId) {
+      state.selectedDocId = docId;
+      const doc = state.docs.find(d => d.id === docId);
+      document.getElementById('activeDocTitle').textContent = doc ? doc.filename : 'Pilih dokumen';
+      document.getElementById('activeDocMeta').textContent = doc ? `${doc.word_count} kata • Siap tanya jawab offline` : '';
+      document.getElementById('btnViewSummary').disabled = !doc;
+      renderDocList();
+      renderChatMessages();
+    }
+
+    function renderChatMessages() {
+      const box = document.getElementById('chatMessages');
+      const msgs = state.chatsByDoc[state.selectedDocId] || [];
+      if (!msgs.length) {
+        box.innerHTML = '<div class="bubble bot">Dokumen aktif siap. Klik <strong>Lihat Ringkasan</strong> atau ketik pertanyaan tentang isi dokumen ini.</div>';
+        return;
+      }
+      box.innerHTML = msgs.map(m => `<div class="bubble ${m.role}">${escapeHtml(m.text)}</div>`).join('');
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function appendChat(docId, role, text) {
+      if (!state.chatsByDoc[docId]) state.chatsByDoc[docId] = [];
+      state.chatsByDoc[docId].push({ role, text });
+      if (docId === state.selectedDocId) renderChatMessages();
+    }
+
+    function clearActiveChat() {
+      if (!state.selectedDocId) return;
+      state.chatsByDoc[state.selectedDocId] = [];
+      renderChatMessages();
+    }
+
+    async function loadActiveSummary() {
+      if (!state.selectedDocId) return;
       try {
-        const res = await fetchJSON('/api/outputs/caption?job_id=' + encodeURIComponent(jobId));
-        box.textContent = res.caption;
+        const res = await fetchJSON('/api/docs/summary?id=' + encodeURIComponent(state.selectedDocId));
+        appendChat(state.selectedDocId, 'summary', res.summary_markdown);
       } catch (e) {
-        box.textContent = 'Error: ' + e.message;
+        appendChat(state.selectedDocId, 'bot', 'Gagal memuat ringkasan: ' + e.message);
       }
     }
 
-    function showVideo(jobId) {
-      const wrap = document.getElementById('videoPreviewWrap');
-      const vid = document.getElementById('videoPreview');
-      const dl = document.getElementById('videoDownloadLink');
-      const url = '/api/outputs/video?job_id=' + encodeURIComponent(jobId);
-      vid.src = url;
-      dl.href = url;
-      dl.download = jobId + '.mp4';
-      wrap.style.display = 'block';
+    function useQuickQuestion(q) {
+      document.getElementById('qaInput').value = q;
+      document.getElementById('qaInput').focus();
     }
 
-    document.getElementById('uploadForm').addEventListener('submit', async (ev) => {
-      ev.preventDefault();
-      const fileInput = document.getElementById('docFile');
-      if (!fileInput.files.length) return;
-      const formData = new FormData();
-      formData.append('file', fileInput.files[0]);
-      const msg = document.getElementById('uploadMsg');
-      msg.textContent = 'Mengunggah ke folder input lokal...';
+    async function uploadDocFile(file) {
+      const msg = document.getElementById('docUploadStatus');
+      msg.textContent = `Mengunggah ${file.name}...`;
+      const fd = new FormData();
+      fd.append('file', file);
       try {
-        const res = await fetchJSON('/api/docs/upload', { method: 'POST', body: formData });
-        msg.textContent = `Masuk antrean: ${res.filename} (${res.job_id})`;
-        fileInput.value = '';
-        refreshJobs();
+        const res = await fetchJSON('/api/docs/upload', { method: 'POST', body: fd });
+        msg.textContent = `Masuk antrean ringkas: ${res.filename} (${res.job_id})`;
+        refreshAll();
       } catch (e) {
-        msg.textContent = 'Gagal: ' + e.message;
+        msg.textContent = 'Gagal unggah: ' + e.message;
       }
-    });
+    }
+
+    async function refreshAssets() {
+      state.assets = await fetchJSON('/api/assets');
+      const el = document.getElementById('assetChips');
+      if (!state.assets.length) {
+        el.innerHTML = '<span class="hint">Belum ada aset di storage/affiliate_assets/</span>';
+        return;
+      }
+      el.innerHTML = state.assets.map(a =>
+        `<button type="button" class="asset-chip" onclick="pickAsset('${escapeHtml(a)}')">+ ${escapeHtml(a.split('/').pop())}</button>`
+      ).join('');
+    }
+
+    function pickAsset(path) {
+      const lower = path.toLowerCase();
+      if (lower.endsWith('.mp3') || lower.endsWith('.wav') || lower.endsWith('.m4a') || lower.endsWith('.aac')) {
+        document.getElementById('affBgm').value = path;
+        return;
+      }
+      const ta = document.getElementById('affClips');
+      const current = ta.value.split(/[\n,]+/).map(x => x.trim()).filter(Boolean);
+      if (!current.includes(path)) current.push(path);
+      ta.value = current.join('\n');
+    }
+
+    async function uploadAssetFile(file) {
+      const msg = document.getElementById('assetUploadStatus');
+      msg.textContent = `Mengunggah aset ${file.name}...`;
+      const fd = new FormData();
+      fd.append('file', file);
+      try {
+        const res = await fetchJSON('/api/assets/upload', { method: 'POST', body: fd });
+        msg.textContent = `Aset tersimpan: ${res.path}`;
+        await refreshAssets();
+        pickAsset(res.path);
+      } catch (e) {
+        msg.textContent = 'Gagal upload aset: ' + e.message;
+      }
+    }
+
+    async function refreshJobs() {
+      state.jobs = await fetchJSON('/api/jobs');
+      const affJobs = state.jobs.filter(j => j.job_type === 'affiliate_video');
+      const pendingCount = state.jobs.filter(j => j.status === 'QUEUED' || j.status === 'PROCESSING').length;
+      document.getElementById('affCountBadge').textContent = affJobs.length;
+      document.getElementById('queueCountBadge').textContent = pendingCount || state.jobs.length;
+
+      const active = state.jobs.find(j => j.status === 'PROCESSING');
+      const pill = document.getElementById('workerStatusPill');
+      pill.innerHTML = active
+        ? `<span class="dot warn"></span><span>Memproses: ${escapeHtml(active.job_type)} (${escapeHtml(active.source_path)})</span>`
+        : `<span class="dot ok"></span><span>Worker Serial Siap (Concurrency = 1)</span>`;
+
+      const sel = document.getElementById('affJobSelect');
+      const prev = sel.value;
+      sel.innerHTML = affJobs.length
+        ? affJobs.map(j => `<option value="${j.id}">[${j.status}] ${escapeHtml(j.source_path)} — ${escapeHtml(j.created_at_local)}</option>`).join('')
+        : '<option value="">Belum ada job affiliate</option>';
+      if (prev && affJobs.some(j => j.id === prev)) {
+        sel.value = prev;
+      } else if (affJobs.length > 0 && affJobs[0].status === 'DONE') {
+        sel.value = affJobs[0].id;
+        inspectAffiliateJob(affJobs[0].id);
+      }
+
+      renderQueueTable();
+    }
+
+    function setJobFilter(filter) {
+      state.jobFilter = filter;
+      renderQueueTable();
+    }
+
+    function renderQueueTable() {
+      const filtered = state.jobs.filter(j => state.jobFilter === 'all' || j.job_type === state.jobFilter);
+      const body = document.getElementById('queueTableBody');
+      if (!filtered.length) {
+        body.innerHTML = '<tr><td colspan="5">Tidak ada job pada filter ini.</td></tr>';
+        return;
+      }
+      body.innerHTML = filtered.map(j => {
+        const out = j.error_message
+          ? `<span style="color:var(--err);">${escapeHtml(j.error_message)}</span>`
+          : escapeHtml(j.result_path || '-');
+        return `<tr>
+          <td>${escapeHtml(j.created_at_local)}</td>
+          <td>${escapeHtml(j.job_type)}</td>
+          <td><span class="badge-status st-${escapeHtml(j.status)}">${escapeHtml(j.status)}</span></td>
+          <td>${escapeHtml(j.source_path)}</td>
+          <td>${out}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    async function inspectAffiliateJob(jobId) {
+      const empty = document.getElementById('affStudioEmpty');
+      const panel = document.getElementById('affStudioPanel');
+      if (!jobId) {
+        panel.style.display = 'none';
+        empty.style.display = 'block';
+        return;
+      }
+      const job = state.jobs.find(j => j.id === jobId);
+      if (!job || job.status !== 'DONE') {
+        panel.style.display = 'none';
+        empty.style.display = 'block';
+        empty.textContent = job ? `Status job saat ini: ${job.status}${job.error_message ? ' (' + job.error_message + ')' : ''}` : '';
+        return;
+      }
+
+      try {
+        const payload = await fetchJSON('/api/outputs/payload?job_id=' + encodeURIComponent(jobId));
+        const vidUrl = '/api/outputs/video?job_id=' + encodeURIComponent(jobId);
+        document.getElementById('studioVideo').src = vidUrl;
+        const dl = document.getElementById('studioDownload');
+        dl.href = vidUrl;
+        dl.download = jobId + '.mp4';
+
+        const ai = payload.ai_generated || {};
+        const captionFull = `${ai.caption || ''}\n\n${(ai.hashtags || []).join(' ')}`.trim();
+        state.currentCaptionCopy = captionFull;
+
+        document.getElementById('studioHook').textContent = ai.hook_text || '-';
+        document.getElementById('studioCaption').textContent = captionFull || '-';
+        document.getElementById('studioVoiceover').textContent = ai.voiceover_script || '-';
+        document.getElementById('studioChecklist').textContent =
+          `1. Upload ${jobId}.mp4 ke TikTok Draft.\n2. Tambah Tautan → Produk → pilih ${payload.product_name || 'produk'}.\n3. Tempel caption & hashtag lalu Posting.`;
+
+        empty.style.display = 'none';
+        panel.style.display = 'grid';
+      } catch (e) {
+        panel.style.display = 'none';
+        empty.style.display = 'block';
+        empty.textContent = 'Output belum tersedia: ' + e.message;
+      }
+    }
+
+    async function copyCaptionBundle() {
+      if (!state.currentCaptionCopy) return;
+      try {
+        await navigator.clipboard.writeText(state.currentCaptionCopy);
+        alert('Caption + Hashtags disalin ke clipboard!');
+      } catch {
+        prompt('Salin caption berikut:', state.currentCaptionCopy);
+      }
+    }
+
+    function wireDropzone(zoneId, inputId, handler) {
+      const zone = document.getElementById(zoneId);
+      const input = document.getElementById(inputId);
+      input.addEventListener('change', () => {
+        if (input.files.length) handler(input.files[0]);
+        input.value = '';
+      });
+      zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+      zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+      zone.addEventListener('drop', e => {
+        e.preventDefault();
+        zone.classList.remove('dragover');
+        if (e.dataTransfer.files.length) handler(e.dataTransfer.files[0]);
+      });
+    }
 
     document.getElementById('qaForm').addEventListener('submit', async (ev) => {
       ev.preventDefault();
-      const docId = document.getElementById('docSelect').value;
-      const question = document.getElementById('qaQuestion').value.trim();
-      const box = document.getElementById('docAnswer');
-      const btn = document.getElementById('qaBtn');
-      if (!docId || !question) return;
+      if (!state.selectedDocId) {
+        alert('Pilih dokumen terlebih dahulu di daftar sebelah kiri.');
+        return;
+      }
+      const input = document.getElementById('qaInput');
+      const btn = document.getElementById('qaSubmitBtn');
+      const q = input.value.trim();
+      if (!q) return;
+
+      const docId = state.selectedDocId;
+      appendChat(docId, 'user', q);
+      input.value = '';
       btn.disabled = true;
-      box.style.display = 'block';
-      box.textContent = 'Memproses jawaban dengan Ollama lokal...';
       try {
         const res = await fetchJSON('/api/docs/qa', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ doc_id: docId, question })
+          body: JSON.stringify({ doc_id: docId, question: q })
         });
-        box.textContent = `[${res.filename}]\n\n${res.answer}`;
+        appendChat(docId, 'bot', res.answer);
       } catch (e) {
-        box.textContent = 'Error: ' + e.message;
+        appendChat(docId, 'bot', 'Error: ' + e.message);
       } finally {
         btn.disabled = false;
       }
@@ -347,34 +941,43 @@
 
     document.getElementById('affiliateForm').addEventListener('submit', async (ev) => {
       ev.preventDefault();
-      const msg = document.getElementById('affMsg');
       const splitItems = s => s.split(/[\n,]+/).map(x => x.trim()).filter(Boolean);
       const payload = {
-        product_name: document.getElementById('prodName').value.trim(),
-        selling_points: splitItems(document.getElementById('prodPoints').value),
-        target_duration_sec: parseInt(document.getElementById('prodDuration').value, 10) || 20,
-        clips: splitItems(document.getElementById('prodClips').value),
-        bgm: document.getElementById('prodBgm').value.trim()
+        product_name: document.getElementById('affName').value.trim(),
+        selling_points: splitItems(document.getElementById('affPoints').value),
+        target_duration_sec: parseInt(document.getElementById('affDuration').value, 10) || 20,
+        clips: splitItems(document.getElementById('affClips').value),
+        bgm: document.getElementById('affBgm').value.trim()
       };
-      msg.textContent = 'Menambahkan job ke antrean serial...';
+      const statusEl = document.getElementById('affFormStatus');
+      statusEl.textContent = 'Mengirim ke antrean serial...';
       try {
         const res = await fetchJSON('/api/affiliate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        msg.textContent = `Job affiliate masuk antrean: ${res.job_id}`;
-        refreshJobs();
+        statusEl.textContent = `Masuk antrean: ${res.job_id}`;
+        await refreshJobs();
+        document.getElementById('affJobSelect').value = res.job_id;
+        inspectAffiliateJob(res.job_id);
       } catch (e) {
-        msg.textContent = 'Gagal: ' + e.message;
+        statusEl.textContent = 'Gagal: ' + e.message;
       }
     });
 
-    refreshHealth();
-    refreshDocs();
-    refreshAssets();
-    refreshJobs();
-    setInterval(() => { refreshJobs(); refreshDocs(); }, 4000);
+    async function refreshAll() {
+      await Promise.all([refreshHealth(), refreshDocs(), refreshAssets(), refreshJobs()]);
+    }
+
+    wireDropzone('docDropzone', 'docFileInput', uploadDocFile);
+    wireDropzone('assetDropzone', 'assetFileInput', uploadAssetFile);
+
+    const hashTab = location.hash.replace('#', '');
+    if (tabMeta[hashTab]) switchTab(hashTab);
+
+    refreshAll();
+    setInterval(() => { refreshJobs(); refreshDocs(); refreshHealth(); }, 4000);
   </script>
 </body>
 </html>
