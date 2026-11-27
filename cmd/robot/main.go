@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -21,6 +22,7 @@ import (
 	"github.com/Labildev/robot_labil/internal/queue"
 	"github.com/Labildev/robot_labil/internal/video"
 	"github.com/Labildev/robot_labil/internal/watcher"
+	"github.com/Labildev/robot_labil/internal/web"
 )
 
 func main() {
@@ -77,6 +79,7 @@ func run(args []string) error {
 	docHandler := pipeline.NewDocSummaryHandler(cfg, store, extractor, assistant)
 
 	affiliateGen := llm.NewAffiliateGenerator(ollamaClient, affiliatePrompt)
+	piperTTS := video.NewPiperTTS(cfg.TTS.Enabled, cfg.TTS.PiperBin, cfg.TTS.ModelPath)
 	filmcraftRenderer := video.NewFilmCraftRenderer(
 		cfg.Video.FilmCraftBin,
 		cfg.Video.FilmCraftMode,
@@ -92,14 +95,16 @@ func run(args []string) error {
 		cfg.Video.FPS,
 	)
 	renderer := video.NewFallbackRenderer(filmcraftRenderer, ffmpegRenderer, cfg.Video.FallbackToFFmpeg, logger)
-	affiliateHandler := pipeline.NewAffiliateVideoHandler(cfg, ollamaClient, affiliateGen, renderer)
+	affiliateHandler := pipeline.NewAffiliateVideoHandler(cfg, ollamaClient, affiliateGen, piperTTS, renderer, logger)
+
+	var execMu sync.Mutex
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
 	switch subCmd {
 	case "health":
-		return runHealth(ctx, cfg, ollamaClient)
+		return runHealth(ctx, cfg, ollamaClient, piperTTS)
 	case "ollama-serve":
 		return runOllamaServe(ctx, cfg)
 	case "status":
@@ -111,7 +116,9 @@ func run(args []string) error {
 	case "affiliate":
 		return runAffiliate(ctx, rest, store, logger, affiliateHandler)
 	case "watch":
-		return runWatch(ctx, cfg, store, logger, docHandler, affiliateHandler)
+		return runWatch(ctx, cfg, store, logger, docHandler, affiliateHandler, &execMu)
+	case "serve":
+		return runServe(ctx, cfg, store, logger, ollamaClient, assistant, piperTTS, docHandler, affiliateHandler, &execMu)
 	case "help", "-h", "--help":
 		printUsage()
 		return nil
@@ -121,12 +128,14 @@ func run(args []string) error {
 	}
 }
 
-func runHealth(ctx context.Context, cfg *config.Config, client llm.Client) error {
+func runHealth(ctx context.Context, cfg *config.Config, client llm.Client, tts video.TTSSynthesizer) error {
 	fmt.Printf("App       : %s (concurrency=%d)\n", cfg.App.Name, cfg.App.MaxConcurrency)
 	fmt.Printf("Database  : %s\n", cfg.Paths.Database)
 	fmt.Printf("ModelsDir : %s\n", cfg.Ollama.ModelsDir)
 	fmt.Printf("OllamaBin : %s\n", cfg.Ollama.BinPath)
 	fmt.Printf("OllamaURL : %s (model=%s, num_ctx=%d)\n", cfg.Ollama.BaseURL, cfg.Ollama.Model, cfg.Ollama.NumCtx)
+	fmt.Printf("PiperTTS  : available=%v (bin=%s)\n", tts.Available(), cfg.TTS.PiperBin)
+	fmt.Printf("WebUI     : http://%s\n", cfg.Web.ListenAddr)
 	if err := client.Health(ctx); err != nil {
 		return fmt.Errorf("ollama health check failed: %w", err)
 	}
@@ -326,12 +335,14 @@ func runWatch(
 	logger *slog.Logger,
 	docHandler *pipeline.DocSummaryHandler,
 	affiliateHandler *pipeline.AffiliateVideoHandler,
+	execMu *sync.Mutex,
 ) error {
 	fw := watcher.New(cfg.Paths.InputDocs, store, logger, time.Duration(cfg.Watcher.PollIntervalSec)*time.Second)
 	worker := queue.NewWorker(store, logger, 2*time.Second, map[string]queue.Handler{
 		queue.JobTypeDocSummary:     docHandler.Handle,
 		queue.JobTypeAffiliateVideo: affiliateHandler.Handle,
 	})
+	worker.SetExecMutex(execMu)
 
 	logger.Info("starting local robot watcher & serial worker",
 		"input_docs", cfg.Paths.InputDocs,
@@ -347,6 +358,47 @@ func runWatch(
 	select {
 	case <-ctx.Done():
 		logger.Info("shutting down gracefully")
+		return nil
+	case err := <-errCh:
+		if err == context.Canceled {
+			return nil
+		}
+		return err
+	}
+}
+
+func runServe(
+	ctx context.Context,
+	cfg *config.Config,
+	store *queue.Store,
+	logger *slog.Logger,
+	ollamaClient llm.Client,
+	assistant *llm.DocumentAssistant,
+	tts video.TTSSynthesizer,
+	docHandler *pipeline.DocSummaryHandler,
+	affiliateHandler *pipeline.AffiliateVideoHandler,
+	execMu *sync.Mutex,
+) error {
+	srv, err := web.NewServer(cfg, store, ollamaClient, assistant, tts, execMu, logger)
+	if err != nil {
+		return err
+	}
+
+	fw := watcher.New(cfg.Paths.InputDocs, store, logger, time.Duration(cfg.Watcher.PollIntervalSec)*time.Second)
+	worker := queue.NewWorker(store, logger, 2*time.Second, map[string]queue.Handler{
+		queue.JobTypeDocSummary:     docHandler.Handle,
+		queue.JobTypeAffiliateVideo: affiliateHandler.Handle,
+	})
+	worker.SetExecMutex(execMu)
+
+	errCh := make(chan error, 3)
+	go func() { errCh <- fw.Run(ctx) }()
+	go func() { errCh <- worker.Run(ctx) }()
+	go func() { errCh <- srv.ListenAndServe(ctx) }()
+
+	select {
+	case <-ctx.Done():
+		logger.Info("shutting down dashboard, watcher, and worker gracefully")
 		return nil
 	case err := <-errCh:
 		if err == context.Canceled {
@@ -391,6 +443,7 @@ Usage:
 Commands:
   health                        Cek konfigurasi & koneksi Ollama lokal
   ollama-serve                  Jalankan Ollama portable di tools/ollama/ dengan model di storage/models/
+  serve                         Jalankan Web Dashboard (127.0.0.1:8080) + Watcher + Serial Worker
   watch                         Pantau storage/input_docs/ & proses semua antrean secara serial
   summarize <file>              Ekstrak dan ringkas file .pdf/.docx/.txt ke storage/output_docs/
   qa --doc <nama> --q "<tanya>" Tanya jawab berdasarkan dokumen yang sudah diproses

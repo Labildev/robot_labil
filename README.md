@@ -7,13 +7,14 @@ Lihat spesifikasi lengkap di [prd_trd_local_ai_automation.md](prd_trd_local_ai_a
 ## Status Implementasi
 - **Fase 1 (Selesai):** Fondasi Go, konfigurasi YAML, persistent SQLite serial queue (`Concurrency = 1`), folder watcher (`fsnotify`), ekstraktor `.pdf` / `.docx`, Map-Reduce summarizer & Q&A via Ollama lokal (`127.0.0.1:11434`).
 - **Fase 2 (Selesai):** Generator naskah affiliate JSON (`Ollama`), active VRAM unload (`keep_alive=0`), perakitan & render video 9:16 via **FilmCraft** (CLI / JSON server) dengan fallback **FFmpeg**, serta ekspor paket lokal (`<job_id>.mp4` + `caption.txt` + `job_payload.json`).
-- **Fase 3 (Berikutnya):** Local Web Dashboard (`127.0.0.1:8080`) & integrasi **Piper TTS** offline.
+- **Fase 3 (Selesai):** Local Web Dashboard offline (`http://127.0.0.1:8080`) untuk upload dokumen, Q&A interaktif, input job affiliate, pemantauan antrean real-time, serta integrasi **Piper TTS** offline (`tools/piper/piper.exe`).
 
 ## Prasyarat Lokal (Semua di dalam Folder Proyek)
 1. **Go 1.23+**
 2. **Ollama portable** di `tools/ollama/ollama.exe` dengan model di `storage/models/` (`qwen2.5:3b`)
 3. **FilmCraft** dan/atau **FFmpeg** di `PATH` untuk rendering video affiliate
-4. *(Opsional)* `pdftotext` (Poppler) di `PATH` untuk ekstraksi PDF yang lebih akurat (ada fallback pure-Go bawaan)
+4. *(Opsional)* **Piper TTS** di `tools/piper/piper.exe` + model suara `.onnx` di `storage/models/piper/` untuk voiceover otomatis offline
+5. *(Opsional)* `pdftotext` (Poppler) di `PATH` untuk ekstraksi PDF yang lebih akurat (ada fallback pure-Go bawaan)
 
 ## Cara Menjalankan
 ```powershell
@@ -25,20 +26,20 @@ Lihat spesifikasi lengkap di [prd_trd_local_ai_automation.md](prd_trd_local_ai_a
 # atau:
 .\scripts\start_ollama.ps1
 
-# 2. Cek koneksi Ollama & folder lokal
+# 2. Jalankan Web Dashboard + Watcher + Serial Worker (buka http://127.0.0.1:8080)
+.\robot.exe serve
+
+# 3. Cek koneksi Ollama & folder lokal
 .\robot.exe health
 
-# 3. Ringkas 1 file PDF/DOCX secara manual
+# 4. Ringkas 1 file PDF/DOCX secara manual
 .\robot.exe summarize .\storage\input_docs\contoh.docx
 
-# 4. Tanya jawab berdasarkan dokumen yang sudah diringkas
+# 5. Tanya jawab berdasarkan dokumen yang sudah diringkas
 .\robot.exe qa --doc contoh --q "Apa poin utamanya?"
 
-# 5. Buat paket video affiliate lokal (.mp4 + caption.txt)
+# 6. Buat paket video affiliate lokal (.mp4 + caption.txt)
 .\robot.exe affiliate --name "Mini Tripod 360" --points "Ringan,Remote Bluetooth" --clips "storage/affiliate_assets/clip1.mp4"
-
-# 6. Jalankan mode daemon (pantau folder input_docs + worker serial)
-.\robot.exe watch
 
 # 7. Lihat status antrean SQLite
 .\robot.exe status

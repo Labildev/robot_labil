@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Robot Labil — 100% Local AI Dashboard</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #2f81f7;
+      --ok: #3fb950;
+      --warn: #d29922;
+      --err: #f85149;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    header {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--card);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    header h1 { margin: 0; font-size: 1.2rem; }
+    .badges { display: flex; gap: 8px; flex-wrap: wrap; font-size: 0.85rem; }
+    .badge {
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #0d1117;
+    }
+    .badge.ok { border-color: var(--ok); color: var(--ok); }
+    .badge.err { border-color: var(--err); color: var(--err); }
+    main {
+      max-width: 1200px;
+      margin: 24px auto;
+      padding: 0 16px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+    }
+    .card.full { grid-column: 1 / -1; }
+    h2 { margin-top: 0; font-size: 1.05rem; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+    label { display: block; font-size: 0.85rem; color: var(--muted); margin: 10px 0 4px; }
+    input, textarea, select {
+      width: 100%;
+      padding: 9px 10px;
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 0.92rem;
+    }
+    button {
+      margin-top: 12px;
+      padding: 9px 14px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    button.secondary { background: #21262d; border: 1px solid var(--border); }
+    button:disabled { opacity: 0.6; cursor: wait; }
+    .output-box {
+      margin-top: 12px;
+      padding: 12px;
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      white-space: pre-wrap;
+      font-size: 0.88rem;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; margin-top: 8px; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { color: var(--muted); font-weight: 600; }
+    .status-DONE { color: var(--ok); font-weight: 600; }
+    .status-FAILED { color: var(--err); font-weight: 600; }
+    .status-PROCESSING { color: var(--warn); font-weight: 600; }
+    .status-QUEUED { color: var(--accent); font-weight: 600; }
+    .hint { font-size: 0.8rem; color: var(--muted); margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Robot Labil — 100% Full Local Dashboard</h1>
+    <div class="badges" id="healthBadges">
+      <span class="badge">Memuat status...</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>1. Asisten Dokumen Offline</h2>
+      <form id="uploadForm">
+        <label for="docFile">Unggah Dokumen (.pdf, .docx, .txt, .md)</label>
+        <input type="file" id="docFile" name="file" accept=".pdf,.docx,.txt,.md" required>
+        <button type="submit">Kirim ke Antrean Ringkas</button>
+      </form>
+      <div id="uploadMsg" class="hint"></div>
+
+      <label for="docSelect">Pilih Dokumen untuk Ringkasan / Q&amp;A</label>
+      <select id="docSelect"></select>
+      <div style="display:flex; gap:8px;">
+        <button type="button" class="secondary" onclick="viewSummary()">Lihat Ringkasan</button>
+        <button type="button" class="secondary" onclick="refreshDocs()">Refresh Daftar</button>
+      </div>
+
+      <form id="qaForm">
+        <label for="qaQuestion">Tanya Jawab Isi Dokumen (Offline Ollama)</label>
+        <input type="text" id="qaQuestion" placeholder="Contoh: Apa kesimpulan utama dokumen ini?" required>
+        <button type="submit" id="qaBtn">Tanya AI Lokal</button>
+      </form>
+      <div id="docAnswer" class="output-box" style="display:none;"></div>
+    </section>
+
+    <section class="card">
+      <h2>2. Pipeline Video Affiliate</h2>
+      <form id="affiliateForm">
+        <label for="prodName">Nama Produk</label>
+        <input type="text" id="prodName" placeholder="Contoh: Mini Tripod Bluetooth 360" required>
+
+        <label for="prodPoints">Keunggulan Produk (pisahkan baris atau koma)</label>
+        <textarea id="prodPoints" rows="3" placeholder="Ringan muat di tas&#10;Remote shutter Bluetooth&#10;Tinggi hingga 120 cm"></textarea>
+
+        <label for="prodDuration">Target Durasi (detik)</label>
+        <input type="number" id="prodDuration" value="20" min="5" max="120">
+
+        <label for="prodClips">Path Klip / Foto Produk (pisahkan baris atau koma)</label>
+        <textarea id="prodClips" rows="2" placeholder="storage/affiliate_assets/clip1.mp4" required></textarea>
+        <div class="hint" id="assetHints">Memeriksa aset lokal...</div>
+
+        <label for="prodBgm">Path Musik Latar (opsional)</label>
+        <input type="text" id="prodBgm" placeholder="storage/affiliate_assets/bgm.mp3">
+
+        <button type="submit">Masuk Antrean Render</button>
+      </form>
+      <div id="affMsg" class="hint"></div>
+    </section>
+
+    <section class="card full">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2 style="border:none; margin:0; padding:0;">3. Antrean Serial &amp; Output Lokal (Concurrency = 1)</h2>
+        <button type="button" class="secondary" style="margin:0;" onclick="refreshJobs()">Refresh</button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Waktu</th>
+            <th>Tipe</th>
+            <th>Status</th>
+            <th>Sumber</th>
+            <th>Output / Error</th>
+          </tr>
+        </thead>
+        <tbody id="jobsBody">
+          <tr><td colspan="5">Memuat...</td></tr>
+        </tbody>
+      </table>
+      <div id="captionPreview" class="output-box" style="display:none;"></div>
+    </section>
+  </main>
+
+  <script>
+    async function fetchJSON(url, opts) {
+      const res = await fetch(url, opts);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || res.statusText);
+      return data;
+    }
+
+    async function refreshHealth() {
+      try {
+        const h = await fetchJSON('/api/health');
+        const badges = document.getElementById('healthBadges');
+        badges.innerHTML =
+          `<span class="badge ${h.ollama_ok ? 'ok' : 'err'}">Ollama: ${h.ollama_ok ? 'Online (' + h.model + ')' : 'Offline'}</span>` +
+          `<span class="badge ${h.piper_available ? 'ok' : ''}">Piper TTS: ${h.piper_available ? 'Siap' : 'Belum terpasang'}</span>` +
+          `<span class="badge">Serial Queue: ${h.max_concurrency}</span>`;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function refreshDocs() {
+      try {
+        const docs = await fetchJSON('/api/docs');
+        const sel = document.getElementById('docSelect');
+        sel.innerHTML = docs.length
+          ? docs.map(d => `<option value="${d.id}">${d.filename} (${d.word_count} kata)</option>`).join('')
+          : '<option value="">Belum ada dokumen diproses</option>';
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function refreshAssets() {
+      try {
+        const assets = await fetchJSON('/api/assets');
+        const el = document.getElementById('assetHints');
+        el.textContent = assets.length
+          ? 'Aset tersedia: ' + assets.slice(0, 6).join(', ')
+          : 'Taruh klip/foto/bgm ke storage/affiliate_assets/';
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function refreshJobs() {
+      try {
+        const jobs = await fetchJSON('/api/jobs');
+        const body = document.getElementById('jobsBody');
+        if (!jobs.length) {
+          body.innerHTML = '<tr><td colspan="5">Belum ada antrean job.</td></tr>';
+          return;
+        }
+        body.innerHTML = jobs.map(j => {
+          const outHtml = j.error_message
+            ? `<span class="status-FAILED">${escapeHtml(j.error_message)}</span>`
+            : `${escapeHtml(j.result_path || '-')}` +
+              (j.job_type === 'affiliate_video' && j.status === 'DONE'
+                ? ` <button type="button" class="secondary" style="margin:0 0 0 6px; padding:3px 8px; font-size:0.78rem;" onclick="showCaption('${j.id}')">Lihat Caption</button>`
+                : '');
+          return `<tr>
+            <td>${escapeHtml(j.created_at_local || '')}</td>
+            <td>${escapeHtml(j.job_type)}</td>
+            <td class="status-${escapeHtml(j.status)}">${escapeHtml(j.status)}</td>
+            <td>${escapeHtml(j.source_path)}</td>
+            <td>${outHtml}</td>
+          </tr>`;
+        }).join('');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+    }
+
+    async function viewSummary() {
+      const id = document.getElementById('docSelect').value;
+      if (!id) return;
+      const box = document.getElementById('docAnswer');
+      box.style.display = 'block';
+      box.textContent = 'Memuat ringkasan...';
+      try {
+        const res = await fetchJSON('/api/docs/summary?id=' + encodeURIComponent(id));
+        box.textContent = res.summary_markdown;
+      } catch (e) {
+        box.textContent = 'Error: ' + e.message;
+      }
+    }
+
+    async function showCaption(jobId) {
+      const box = document.getElementById('captionPreview');
+      box.style.display = 'block';
+      box.textContent = 'Memuat caption.txt...';
+      try {
+        const res = await fetchJSON('/api/outputs/caption?job_id=' + encodeURIComponent(jobId));
+        box.textContent = res.caption;
+      } catch (e) {
+        box.textContent = 'Error: ' + e.message;
+      }
+    }
+
+    document.getElementById('uploadForm').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const fileInput = document.getElementById('docFile');
+      if (!fileInput.files.length) return;
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+      const msg = document.getElementById('uploadMsg');
+      msg.textContent = 'Mengunggah ke folder input lokal...';
+      try {
+        const res = await fetchJSON('/api/docs/upload', { method: 'POST', body: formData });
+        msg.textContent = `Masuk antrean: ${res.filename} (${res.job_id})`;
+        fileInput.value = '';
+        refreshJobs();
+      } catch (e) {
+        msg.textContent = 'Gagal: ' + e.message;
+      }
+    });
+
+    document.getElementById('qaForm').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const docId = document.getElementById('docSelect').value;
+      const question = document.getElementById('qaQuestion').value.trim();
+      const box = document.getElementById('docAnswer');
+      const btn = document.getElementById('qaBtn');
+      if (!docId || !question) return;
+      btn.disabled = true;
+      box.style.display = 'block';
+      box.textContent = 'Memproses jawaban dengan Ollama lokal...';
+      try {
+        const res = await fetchJSON('/api/docs/qa', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ doc_id: docId, question })
+        });
+        box.textContent = `[${res.filename}]\n\n${res.answer}`;
+      } catch (e) {
+        box.textContent = 'Error: ' + e.message;
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById('affiliateForm').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const msg = document.getElementById('affMsg');
+      const splitItems = s => s.split(/[\n,]+/).map(x => x.trim()).filter(Boolean);
+      const payload = {
+        product_name: document.getElementById('prodName').value.trim(),
+        selling_points: splitItems(document.getElementById('prodPoints').value),
+        target_duration_sec: parseInt(document.getElementById('prodDuration').value, 10) || 20,
+        clips: splitItems(document.getElementById('prodClips').value),
+        bgm: document.getElementById('prodBgm').value.trim()
+      };
+      msg.textContent = 'Menambahkan job ke antrean serial...';
+      try {
+        const res = await fetchJSON('/api/affiliate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        msg.textContent = `Job affiliate masuk antrean: ${res.job_id}`;
+        refreshJobs();
+      } catch (e) {
+        msg.textContent = 'Gagal: ' + e.message;
+      }
+    });
+
+    refreshHealth();
+    refreshDocs();
+    refreshAssets();
+    refreshJobs();
+    setInterval(() => { refreshJobs(); refreshDocs(); }, 4000);
+  </script>
+</body>
+</html>
