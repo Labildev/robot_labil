@@ -13,6 +13,8 @@ paths:
   prompts_dir: "prompts"
 
 ollama:
+  bin_path: "tools/ollama/ollama.exe"
+  models_dir: "storage/models"
   base_url: "http://127.0.0.1:11434"
   model: "qwen2.5:3b"
   num_ctx: 4096
@@ -23,6 +25,16 @@ document:
   chunk_word_limit: 2000
   map_reduce_threshold_words: 3000
   pdftotext_bin: "pdftotext"
+
+video:
+  filmcraft_bin: "filmcraft"
+  filmcraft_mode: "cli"
+  filmcraft_server_url: "http://127.0.0.1:4123"
+  ffmpeg_bin: "ffmpeg"
+  width: 1080
+  height: 1920
+  fps: 30
+  fallback_to_ffmpeg: true
 
 watcher:
   enabled: true

@@ -15,6 +15,7 @@ type Config struct {
 	Paths    PathsConfig    `yaml:"paths"`
 	Ollama   OllamaConfig   `yaml:"ollama"`
 	Document DocumentConfig `yaml:"document"`
+	Video    VideoConfig    `yaml:"video"`
 	Watcher  WatcherConfig  `yaml:"watcher"`
 	Web      WebConfig      `yaml:"web"`
 }
@@ -37,8 +38,10 @@ type PathsConfig struct {
 	PromptsDir      string `yaml:"prompts_dir"`
 }
 
-// OllamaConfig defines local Ollama inference settings.
+// OllamaConfig defines local Ollama binary, model store, and inference settings.
 type OllamaConfig struct {
+	BinPath           string `yaml:"bin_path"`
+	ModelsDir         string `yaml:"models_dir"`
 	BaseURL           string `yaml:"base_url"`
 	Model             string `yaml:"model"`
 	NumCtx            int    `yaml:"num_ctx"`
@@ -51,6 +54,18 @@ type DocumentConfig struct {
 	ChunkWordLimit          int    `yaml:"chunk_word_limit"`
 	MapReduceThresholdWords int    `yaml:"map_reduce_threshold_words"`
 	PDFToTextBin            string `yaml:"pdftotext_bin"`
+}
+
+// VideoConfig defines FilmCraft and FFmpeg rendering settings.
+type VideoConfig struct {
+	FilmCraftBin       string `yaml:"filmcraft_bin"`
+	FilmCraftMode      string `yaml:"filmcraft_mode"`
+	FilmCraftServerURL string `yaml:"filmcraft_server_url"`
+	FFmpegBin          string `yaml:"ffmpeg_bin"`
+	Width              int    `yaml:"width"`
+	Height             int    `yaml:"height"`
+	FPS                int    `yaml:"fps"`
+	FallbackToFFmpeg   bool   `yaml:"fallback_to_ffmpeg"`
 }
 
 // WatcherConfig controls input folder monitoring.
@@ -82,6 +97,8 @@ func Default() *Config {
 			PromptsDir:      "prompts",
 		},
 		Ollama: OllamaConfig{
+			BinPath:           "tools/ollama/ollama.exe",
+			ModelsDir:         "storage/models",
 			BaseURL:           "http://127.0.0.1:11434",
 			Model:             "qwen2.5:3b",
 			NumCtx:            4096,
@@ -92,6 +109,16 @@ func Default() *Config {
 			ChunkWordLimit:          2000,
 			MapReduceThresholdWords: 3000,
 			PDFToTextBin:            "pdftotext",
+		},
+		Video: VideoConfig{
+			FilmCraftBin:       "filmcraft",
+			FilmCraftMode:      "cli",
+			FilmCraftServerURL: "http://127.0.0.1:4123",
+			FFmpegBin:          "ffmpeg",
+			Width:              1080,
+			Height:             1920,
+			FPS:                30,
+			FallbackToFFmpeg:   true,
 		},
 		Watcher: WatcherConfig{
 			Enabled:         true,
@@ -143,6 +170,18 @@ func (c *Config) Validate() error {
 	if c.Document.MapReduceThresholdWords <= 0 {
 		c.Document.MapReduceThresholdWords = 3000
 	}
+	if c.Video.Width <= 0 {
+		c.Video.Width = 1080
+	}
+	if c.Video.Height <= 0 {
+		c.Video.Height = 1920
+	}
+	if c.Video.FPS <= 0 {
+		c.Video.FPS = 30
+	}
+	if strings.TrimSpace(c.Video.FilmCraftMode) == "" {
+		c.Video.FilmCraftMode = "cli"
+	}
 	if c.Watcher.PollIntervalSec <= 0 {
 		c.Watcher.PollIntervalSec = 5
 	}
@@ -156,9 +195,12 @@ func (c *Config) EnsureDirectories() error {
 		c.Paths.InputDocs,
 		c.Paths.OutputDocs,
 		c.Paths.AffiliateAssets,
+		filepath.Join(c.Paths.AffiliateAssets, "jobs"),
+		filepath.Join(c.Paths.AffiliateAssets, "templates"),
 		c.Paths.OutputVideos,
 		c.Paths.ErrorLogs,
 		c.Paths.PromptsDir,
+		c.Ollama.ModelsDir,
 	}
 	for _, dir := range dirs {
 		if strings.TrimSpace(dir) == "" || dir == "." {

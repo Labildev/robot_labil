@@ -22,7 +22,8 @@ const (
 
 // Job types supported by the serial worker.
 const (
-	JobTypeDocSummary = "doc_summary"
+	JobTypeDocSummary     = "doc_summary"
+	JobTypeAffiliateVideo = "affiliate_video"
 )
 
 // Job represents a queued unit of work persisted in SQLite.

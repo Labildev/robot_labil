@@ -7,6 +7,12 @@
 /dist/
 /robot
 
+# Local portable tools & LLM model weights (kept inside local folder, excluded from Git)
+tools/*
+!tools/.gitkeep
+storage/models/*
+!storage/models/.gitkeep
+
 # Environment & secrets
 .env
 .env.local
