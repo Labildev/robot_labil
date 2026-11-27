@@ -30,14 +30,15 @@ var templateFS embed.FS
 
 // Server exposes the 100% offline local HTTP dashboard and JSON API on 127.0.0.1.
 type Server struct {
-	cfg       *config.Config
-	store     *queue.Store
-	llmClient llm.Client
-	assistant *llm.DocumentAssistant
-	tts       video.TTSSynthesizer
-	execMu    *sync.Mutex
-	logger    *slog.Logger
-	indexHTML []byte
+	cfg         *config.Config
+	store       *queue.Store
+	llmClient   llm.Client
+	assistant   *llm.DocumentAssistant
+	generalChat *llm.GeneralChat
+	tts         video.TTSSynthesizer
+	execMu      *sync.Mutex
+	logger      *slog.Logger
+	indexHTML   []byte
 }
 
 // NewServer creates a local Web Dashboard Server.
@@ -57,15 +58,17 @@ func NewServer(
 	if err != nil {
 		return nil, fmt.Errorf("read embedded dashboard template: %w", err)
 	}
+	chatPrompt, _ := cfg.LoadPrompt("chat.txt")
 	return &Server{
-		cfg:       cfg,
-		store:     store,
-		llmClient: llmClient,
-		assistant: assistant,
-		tts:       tts,
-		execMu:    execMu,
-		logger:    logger,
-		indexHTML: htmlBytes,
+		cfg:         cfg,
+		store:       store,
+		llmClient:   llmClient,
+		assistant:   assistant,
+		generalChat: llm.NewGeneralChat(llmClient, chatPrompt),
+		tts:         tts,
+		execMu:      execMu,
+		logger:      logger,
+		indexHTML:   htmlBytes,
 	}, nil
 }
 
@@ -79,6 +82,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/docs/summary", s.handleDocSummary)
 	mux.HandleFunc("POST /api/docs/upload", s.handleDocUpload)
 	mux.HandleFunc("POST /api/docs/qa", s.handleDocQA)
+	mux.HandleFunc("POST /api/chat", s.handleGeneralChat)
 	mux.HandleFunc("GET /api/assets", s.handleAssets)
 	mux.HandleFunc("POST /api/assets/upload", s.handleAssetUpload)
 	mux.HandleFunc("POST /api/affiliate", s.handleAffiliate)
@@ -362,6 +366,34 @@ func (s *Server) handleDocQA(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"filename": rec.Filename,
 		"answer":   answer,
+	})
+}
+
+func (s *Server) handleGeneralChat(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		History []llm.Message `json:"history"`
+		Message string        `json:"message"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid json payload")
+		return
+	}
+	if strings.TrimSpace(req.Message) == "" {
+		writeError(w, http.StatusBadRequest, "message must not be empty")
+		return
+	}
+
+	if s.execMu != nil {
+		s.execMu.Lock()
+		defer s.execMu.Unlock()
+	}
+	reply, err := s.generalChat.Reply(r.Context(), req.History, req.Message)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"reply": reply,
 	})
 }
 

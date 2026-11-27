@@ -88,6 +88,11 @@
       transition: all 0.16s ease;
     }
     .nav-btn:hover { background: var(--surface); color: var(--text); }
+    .nav-btn.active[data-tab="chat"] {
+      background: rgba(52, 211, 153, 0.12);
+      border-color: rgba(52, 211, 153, 0.4);
+      color: var(--ok);
+    }
     .nav-btn.active[data-tab="docs"] {
       background: rgba(56, 189, 248, 0.12);
       border-color: rgba(56, 189, 248, 0.4);
@@ -236,6 +241,7 @@
       transition: opacity 0.15s;
     }
     .btn:disabled { opacity: 0.55; cursor: wait; }
+    .btn-chat { background: var(--ok); color: #052014; }
     .btn-doc { background: var(--doc-accent); color: #06131f; }
     .btn-aff { background: var(--aff-accent); color: #120926; }
     .btn-ghost { background: var(--surface-2); color: var(--text); border-color: var(--border); }
@@ -400,6 +406,10 @@
 
     <div class="nav-group">
       <div class="nav-label">Workspace Terpisah</div>
+      <button class="nav-btn" data-tab="chat" onclick="switchTab('chat')">
+        <span>Chat AI Umum (Bebas)</span>
+        <span class="pill-count">AI</span>
+      </button>
       <button class="nav-btn active" data-tab="docs" onclick="switchTab('docs')">
         <span>Tanya Jawab PDF / Doc</span>
         <span class="pill-count" id="docCountBadge">0</span>
@@ -435,6 +445,35 @@
     </header>
 
     <main class="content">
+      <!-- VIEW 0: CHAT AI UMUM (BEBAS / TANPA DOKUMEN) -->
+      <section class="view" id="view-chat">
+        <div class="card chat-shell" style="max-width: 960px; margin: 0 auto;">
+          <div class="chat-header">
+            <div>
+              <strong>Chat AI Umum (100% Offline Ollama)</strong>
+              <div class="hint" style="margin-top:2px;">Tanya jawab bebas untuk brainstorming, penulisan, ide konten, atau penjelasan umum tanpa dokumen.</div>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="clearGeneralChat()">Chat Baru</button>
+          </div>
+
+          <div class="chat-messages" id="generalChatMessages">
+            <div class="bubble bot">Halo! Saya asisten AI lokal Anda (Qwen 2.5 3B). Ada yang bisa saya bantu hari ini?</div>
+          </div>
+
+          <div>
+            <div class="chip-row">
+              <button type="button" class="chip" onclick="useGeneralPrompt('Buatkan 5 ide konten video pendek TikTok yang menarik hari ini.')">Ide Konten TikTok</button>
+              <button type="button" class="chip" onclick="useGeneralPrompt('Bantu rapikan kalimat promosi berikut agar lebih persuasif: ')">Rapikan Copywriting</button>
+              <button type="button" class="chip" onclick="useGeneralPrompt('Jelaskan cara kerja AI lokal secara sederhana dalam 3 poin.')">Tanya Pengetahuan Umum</button>
+            </div>
+            <form class="chat-input-row" id="generalChatForm">
+              <input type="text" id="generalChatInput" placeholder="Ketik pertanyaan apa saja di sini..." required>
+              <button type="submit" class="btn btn-chat" id="generalChatBtn">Kirim</button>
+            </form>
+          </div>
+        </div>
+      </section>
+
       <!-- VIEW 1: TANYA JAWAB PDF / DOKUMEN -->
       <section class="view active" id="view-docs">
         <div class="split-grid">
@@ -610,10 +649,15 @@
       selectedDocId: '',
       jobFilter: 'all',
       chatsByDoc: {},
+      generalHistory: [],
       currentCaptionCopy: ''
     };
 
     const tabMeta = {
+      chat: {
+        title: 'Chat AI Umum (Tanya Jawab Bebas)',
+        subtitle: 'Percakapan multi-turn langsung dengan Ollama lokal tanpa perlu mengunggah dokumen.'
+      },
       docs: {
         title: 'Workspace Tanya Jawab PDF & Dokumen',
         subtitle: 'Unggah PDF/DOCX lokal, buat ringkasan otomatis, dan tanya jawab 100% offline dengan Ollama.'
@@ -733,6 +777,57 @@
       document.getElementById('qaInput').value = q;
       document.getElementById('qaInput').focus();
     }
+
+    function useGeneralPrompt(q) {
+      const el = document.getElementById('generalChatInput');
+      el.value = q;
+      el.focus();
+    }
+
+    function renderGeneralChat() {
+      const box = document.getElementById('generalChatMessages');
+      if (!state.generalHistory.length) {
+        box.innerHTML = '<div class="bubble bot">Halo! Saya asisten AI lokal Anda (Qwen 2.5 3B). Ada yang bisa saya bantu hari ini?</div>';
+        return;
+      }
+      box.innerHTML = state.generalHistory.map(m =>
+        `<div class="bubble ${m.role === 'user' ? 'user' : 'bot'}">${escapeHtml(m.content)}</div>`
+      ).join('');
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function clearGeneralChat() {
+      state.generalHistory = [];
+      renderGeneralChat();
+    }
+
+    document.getElementById('generalChatForm').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const input = document.getElementById('generalChatInput');
+      const btn = document.getElementById('generalChatBtn');
+      const msg = input.value.trim();
+      if (!msg) return;
+
+      const priorHistory = state.generalHistory.slice();
+      state.generalHistory.push({ role: 'user', content: msg });
+      renderGeneralChat();
+      input.value = '';
+      btn.disabled = true;
+      try {
+        const res = await fetchJSON('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ history: priorHistory, message: msg })
+        });
+        state.generalHistory.push({ role: 'assistant', content: res.reply });
+        renderGeneralChat();
+      } catch (e) {
+        state.generalHistory.push({ role: 'assistant', content: 'Error: ' + e.message });
+        renderGeneralChat();
+      } finally {
+        btn.disabled = false;
+      }
+    });
 
     async function uploadDocFile(file) {
       const msg = document.getElementById('docUploadStatus');

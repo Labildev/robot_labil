@@ -83,7 +83,7 @@ func TestWebDashboardAPIs(t *testing.T) {
 	// 1. Dashboard HTML includes separated Doc Q&A and Affiliate workspaces
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
-	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "view-docs") || !strings.Contains(rec.Body.String(), "view-affiliate") {
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "view-chat") || !strings.Contains(rec.Body.String(), "view-docs") || !strings.Contains(rec.Body.String(), "view-affiliate") {
 		t.Fatalf("unexpected index response: code=%d", rec.Code)
 	}
 
@@ -187,5 +187,16 @@ func TestWebDashboardAPIs(t *testing.T) {
 	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/outputs/payload?job_id=aff_demo", nil))
 	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "aff_demo") {
 		t.Fatalf("unexpected payload response: code=%d body=%s", rec.Code, rec.Body.String())
+	}
+
+	// 9. General Chat Q&A endpoint
+	chatReq := httptest.NewRequest(http.MethodPost, "/api/chat", strings.NewReader(`{"history":[{"role":"user","content":"Hai"}],"message":"Apa kabar?"}`))
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, chatReq)
+	var chatResp struct {
+		Reply string `json:"reply"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &chatResp); err != nil || rec.Code != http.StatusOK || chatResp.Reply == "" {
+		t.Fatalf("unexpected general chat response: code=%d body=%s err=%v", rec.Code, rec.Body.String(), err)
 	}
 }

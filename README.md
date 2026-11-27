@@ -42,7 +42,8 @@ Skrip ini otomatis menyalakan Ollama lokal, membuka browser ke `http://127.0.0.1
 # 4. Ringkas 1 file PDF/DOCX secara manual
 .\robot.exe summarize .\storage\input_docs\contoh.docx
 
-# 5. Tanya jawab berdasarkan dokumen yang sudah diringkas
+# 5. Tanya jawab bebas (Chat AI umum) atau tanya jawab dokumen
+.\robot.exe chat "Buatkan 3 ide hook video pendek untuk produk tripod"
 .\robot.exe qa --doc contoh --q "Apa poin utamanya?"
 
 # 6. Buat paket video affiliate lokal (.mp4 + caption.txt)

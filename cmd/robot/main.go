@@ -65,6 +65,7 @@ func run(args []string) error {
 
 	summaryPrompt, _ := cfg.LoadPrompt("summary.txt")
 	qaPrompt, _ := cfg.LoadPrompt("qa.txt")
+	chatPrompt, _ := cfg.LoadPrompt("chat.txt")
 	affiliatePrompt, _ := cfg.LoadPrompt("affiliate_script.txt")
 
 	ollamaClient := llm.NewOllamaClient(
@@ -76,6 +77,7 @@ func run(args []string) error {
 	)
 	extractor := doc.NewExtractor(cfg.Document.PDFToTextBin)
 	assistant := llm.NewDocumentAssistant(ollamaClient, summaryPrompt, qaPrompt)
+	generalChat := llm.NewGeneralChat(ollamaClient, chatPrompt)
 	docHandler := pipeline.NewDocSummaryHandler(cfg, store, extractor, assistant)
 
 	affiliateGen := llm.NewAffiliateGenerator(ollamaClient, affiliatePrompt)
@@ -113,6 +115,8 @@ func run(args []string) error {
 		return runSummarize(ctx, rest, store, logger, docHandler)
 	case "qa":
 		return runQA(ctx, rest, cfg, store, assistant)
+	case "chat":
+		return runGeneralChat(ctx, rest, generalChat)
 	case "affiliate":
 		return runAffiliate(ctx, rest, store, logger, affiliateHandler)
 	case "watch":
@@ -328,6 +332,19 @@ func runQA(ctx context.Context, args []string, cfg *config.Config, store *queue.
 	return nil
 }
 
+func runGeneralChat(ctx context.Context, args []string, chat *llm.GeneralChat) error {
+	if len(args) == 0 {
+		return fmt.Errorf("usage: robot chat \"<pertanyaan>\"")
+	}
+	question := strings.Join(args, " ")
+	reply, err := chat.Reply(ctx, nil, question)
+	if err != nil {
+		return err
+	}
+	fmt.Println(reply)
+	return nil
+}
+
 func runWatch(
 	ctx context.Context,
 	cfg *config.Config,
@@ -447,6 +464,7 @@ Commands:
   watch                         Pantau storage/input_docs/ & proses semua antrean secara serial
   summarize <file>              Ekstrak dan ringkas file .pdf/.docx/.txt ke storage/output_docs/
   qa --doc <nama> --q "<tanya>" Tanya jawab berdasarkan dokumen yang sudah diproses
+  chat "<pertanyaan>"           Tanya jawab bebas (chat AI umum) secara offline
   affiliate [flags]             Buat naskah AI, render video 9:16, & kemas caption.txt lokal
   status                        Lihat riwayat dan status antrean job di SQLite`)
 }
