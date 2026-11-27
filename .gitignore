@@ -1,0 +1,32 @@
+# Binaries & build artifacts
+*.exe
+*.dll
+*.so
+*.dylib
+/bin/
+/dist/
+/robot
+
+# Environment & secrets
+.env
+.env.local
+
+# Runtime storage (keep directory structure via .gitkeep)
+storage/robot.db
+storage/robot.db-*
+storage/input_docs/*
+!storage/input_docs/.gitkeep
+storage/output_docs/*
+!storage/output_docs/.gitkeep
+storage/affiliate_assets/*
+!storage/affiliate_assets/.gitkeep
+storage/output_videos/*
+!storage/output_videos/.gitkeep
+storage/error_logs/*
+!storage/error_logs/.gitkeep
+
+# IDE & OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
