@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 )
 
@@ -16,6 +17,7 @@ type Worker struct {
 	logger       *slog.Logger
 	pollInterval time.Duration
 	handlers     map[string]Handler
+	execMu       *sync.Mutex
 }
 
 // NewWorker creates a serial job worker backed by Store.
@@ -32,6 +34,12 @@ func NewWorker(store *Store, logger *slog.Logger, pollInterval time.Duration, ha
 		pollInterval: pollInterval,
 		handlers:     handlers,
 	}
+}
+
+// SetExecMutex attaches an optional shared mutex so interactive requests (e.g. Web Q&A)
+// never run concurrently with background LLM/GPU jobs.
+func (w *Worker) SetExecMutex(mu *sync.Mutex) {
+	w.execMu = mu
 }
 
 // RunOnce processes at most one queued job. Returns (true, nil) if a job was processed.
@@ -71,6 +79,10 @@ func (w *Worker) RunOnce(ctx context.Context) (bool, error) {
 }
 
 func (w *Worker) safeExecute(ctx context.Context, handler Handler, job *Job) (res string, err error) {
+	if w.execMu != nil {
+		w.execMu.Lock()
+		defer w.execMu.Unlock()
+	}
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("worker panic: %v", r)

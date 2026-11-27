@@ -308,3 +308,48 @@ func (s *Store) FindDocumentByName(ctx context.Context, name string) (*DocumentR
 	}
 	return &rec, nil
 }
+
+// ListDocuments returns recent processed documents ordered newest first (without full extracted text).
+func (s *Store) ListDocuments(ctx context.Context, limit int) ([]DocumentRecord, error) {
+	if limit <= 0 {
+		limit = 30
+	}
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT id, filename, source_path, summary_path, word_count, created_at
+		 FROM documents
+		 ORDER BY created_at DESC
+		 LIMIT ?`,
+		limit,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("list documents: %w", err)
+	}
+	defer rows.Close()
+
+	var docs []DocumentRecord
+	for rows.Next() {
+		var d DocumentRecord
+		if err := rows.Scan(&d.ID, &d.Filename, &d.SourcePath, &d.SummaryPath, &d.WordCount, &d.CreatedAt); err != nil {
+			return nil, fmt.Errorf("scan document: %w", err)
+		}
+		docs = append(docs, d)
+	}
+	return docs, rows.Err()
+}
+
+// GetDocumentByID fetches a single document record including its extracted text for Q&A.
+func (s *Store) GetDocumentByID(ctx context.Context, id string) (*DocumentRecord, error) {
+	var rec DocumentRecord
+	err := s.db.QueryRowContext(ctx,
+		`SELECT id, filename, source_path, summary_path, word_count, extracted_text, created_at
+		 FROM documents WHERE id = ? LIMIT 1`,
+		id,
+	).Scan(&rec.ID, &rec.Filename, &rec.SourcePath, &rec.SummaryPath, &rec.WordCount, &rec.ExtractedText, &rec.CreatedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("get document %q: %w", id, err)
+	}
+	return &rec, nil
+}
