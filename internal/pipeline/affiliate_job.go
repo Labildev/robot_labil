@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,21 +27,35 @@ type AffiliateJobRequest struct {
 	ExtraContext      string   `json:"extra_context,omitempty"`
 }
 
-// AffiliateVideoHandler generates copywriting via Ollama, unloads VRAM, renders video, and writes output bundle.
+// AffiliateVideoHandler generates copywriting via Ollama, unloads VRAM, synthesizes TTS if available, renders video, and writes output bundle.
 type AffiliateVideoHandler struct {
 	cfg       *config.Config
 	llmClient llm.Client
 	generator *llm.AffiliateGenerator
+	tts       video.TTSSynthesizer
 	renderer  video.Renderer
+	logger    *slog.Logger
 }
 
 // NewAffiliateVideoHandler constructs an AffiliateVideoHandler.
-func NewAffiliateVideoHandler(cfg *config.Config, llmClient llm.Client, generator *llm.AffiliateGenerator, renderer video.Renderer) *AffiliateVideoHandler {
+func NewAffiliateVideoHandler(
+	cfg *config.Config,
+	llmClient llm.Client,
+	generator *llm.AffiliateGenerator,
+	tts video.TTSSynthesizer,
+	renderer video.Renderer,
+	logger *slog.Logger,
+) *AffiliateVideoHandler {
+	if logger == nil {
+		logger = slog.Default()
+	}
 	return &AffiliateVideoHandler{
 		cfg:       cfg,
 		llmClient: llmClient,
 		generator: generator,
+		tts:       tts,
 		renderer:  renderer,
+		logger:    logger,
 	}
 }
 
@@ -63,7 +78,7 @@ func (h *AffiliateVideoHandler) Handle(ctx context.Context, job *queue.Job) (str
 		return "", err
 	}
 
-	// Explicitly release Ollama VRAM before FilmCraft/FFmpeg starts rendering on the 4 GB RTX 2050.
+	// Explicitly release Ollama VRAM before TTS/FilmCraft/FFmpeg runs on the 4 GB RTX 2050.
 	if h.llmClient != nil {
 		_ = h.llmClient.UnloadModel(ctx)
 	}
@@ -71,6 +86,16 @@ func (h *AffiliateVideoHandler) Handle(ctx context.Context, job *queue.Job) (str
 	outDir := filepath.Join(h.cfg.Paths.OutputVideos, job.ID)
 	workDir := filepath.Join(h.cfg.Paths.AffiliateAssets, "jobs", job.ID)
 	outVideo := filepath.Join(outDir, job.ID+".mp4")
+
+	voiceoverPath := strings.TrimSpace(req.VoiceoverAudio)
+	if voiceoverPath == "" && h.tts != nil && h.tts.Available() && strings.TrimSpace(script.VoiceoverScript) != "" {
+		wavPath := filepath.Join(workDir, "voiceover.wav")
+		if ttsErr := h.tts.Synthesize(ctx, script.VoiceoverScript, wavPath); ttsErr != nil {
+			h.logger.Warn("offline TTS failed, continuing without voiceover", "job_id", job.ID, "error", ttsErr)
+		} else {
+			voiceoverPath = wavPath
+		}
+	}
 
 	payload := &video.JobPayload{
 		JobID:                job.ID,
@@ -80,7 +105,7 @@ func (h *AffiliateVideoHandler) Handle(ctx context.Context, job *queue.Job) (str
 		Assets: video.Assets{
 			Clips:          req.Clips,
 			BGM:            req.BGM,
-			VoiceoverAudio: req.VoiceoverAudio,
+			VoiceoverAudio: voiceoverPath,
 		},
 		AIGenerated:   script,
 		OutputDir:     outDir,

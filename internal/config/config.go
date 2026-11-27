@@ -16,6 +16,7 @@ type Config struct {
 	Ollama   OllamaConfig   `yaml:"ollama"`
 	Document DocumentConfig `yaml:"document"`
 	Video    VideoConfig    `yaml:"video"`
+	TTS      TTSConfig      `yaml:"tts"`
 	Watcher  WatcherConfig  `yaml:"watcher"`
 	Web      WebConfig      `yaml:"web"`
 }
@@ -66,6 +67,13 @@ type VideoConfig struct {
 	Height             int    `yaml:"height"`
 	FPS                int    `yaml:"fps"`
 	FallbackToFFmpeg   bool   `yaml:"fallback_to_ffmpeg"`
+}
+
+// TTSConfig defines local offline Piper TTS settings.
+type TTSConfig struct {
+	Enabled   bool   `yaml:"enabled"`
+	PiperBin  string `yaml:"piper_bin"`
+	ModelPath string `yaml:"model_path"`
 }
 
 // WatcherConfig controls input folder monitoring.
@@ -119,6 +127,11 @@ func Default() *Config {
 			Height:             1920,
 			FPS:                30,
 			FallbackToFFmpeg:   true,
+		},
+		TTS: TTSConfig{
+			Enabled:   true,
+			PiperBin:  "tools/piper/piper.exe",
+			ModelPath: "storage/models/piper/id_ID-news_tts-medium.onnx",
 		},
 		Watcher: WatcherConfig{
 			Enabled:         true,

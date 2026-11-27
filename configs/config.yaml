@@ -36,6 +36,11 @@ video:
   fps: 30
   fallback_to_ffmpeg: true
 
+tts:
+  enabled: true
+  piper_bin: "tools/piper/piper.exe"
+  model_path: "storage/models/piper/id_ID-news_tts-medium.onnx"
+
 watcher:
   enabled: true
   poll_interval_sec: 5

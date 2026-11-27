@@ -26,21 +26,37 @@ func (s *spyAffiliateLLM) UnloadModel(_ context.Context) error {
 }
 func (s *spyAffiliateLLM) Health(_ context.Context) error { return nil }
 
+type spyTTS struct {
+	available bool
+	called    bool
+}
+
+func (t *spyTTS) Available() bool { return t.available }
+func (t *spyTTS) Synthesize(_ context.Context, _, outWavPath string) error {
+	t.called = true
+	if err := os.MkdirAll(filepath.Dir(outWavPath), 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(outWavPath, []byte("RIFF-wav"), 0o644)
+}
+
 type spyRenderer struct {
 	sawUnloadedBeforeRender bool
+	capturedVoiceover       string
 	spyLLM                  *spyAffiliateLLM
 }
 
 func (r *spyRenderer) Name() string { return "spy" }
 func (r *spyRenderer) Render(_ context.Context, payload *video.JobPayload, _ string) error {
 	r.sawUnloadedBeforeRender = r.spyLLM.unloaded
+	r.capturedVoiceover = payload.Assets.VoiceoverAudio
 	if err := os.MkdirAll(filepath.Dir(payload.OutputVideo), 0o755); err != nil {
 		return err
 	}
 	return os.WriteFile(payload.OutputVideo, []byte("mp4-bytes"), 0o644)
 }
 
-func TestAffiliateVideoHandlerUnloadsVRAMAndWritesBundle(t *testing.T) {
+func TestAffiliateVideoHandlerUnloadsVRAMTTSAndWritesBundle(t *testing.T) {
 	tmp := t.TempDir()
 	cfg := config.Default()
 	cfg.Paths.Database = filepath.Join(tmp, "storage", "robot.db")
@@ -56,9 +72,10 @@ func TestAffiliateVideoHandlerUnloadsVRAMAndWritesBundle(t *testing.T) {
 	}
 
 	spyLLM := &spyAffiliateLLM{}
+	tts := &spyTTS{available: true}
 	spyRend := &spyRenderer{spyLLM: spyLLM}
 	gen := llm.NewAffiliateGenerator(spyLLM, "")
-	handler := NewAffiliateVideoHandler(cfg, spyLLM, gen, spyRend)
+	handler := NewAffiliateVideoHandler(cfg, spyLLM, gen, tts, spyRend, nil)
 
 	reqBytes, _ := json.Marshal(AffiliateJobRequest{
 		ProductName:       "Mini Tripod",
@@ -77,6 +94,9 @@ func TestAffiliateVideoHandlerUnloadsVRAMAndWritesBundle(t *testing.T) {
 	}
 	if !spyRend.sawUnloadedBeforeRender {
 		t.Fatalf("expected Ollama VRAM unload before video rendering")
+	}
+	if !tts.called || spyRend.capturedVoiceover == "" {
+		t.Fatalf("expected Piper TTS voiceover to be synthesized and attached")
 	}
 	if _, err := os.Stat(filepath.Join(outDir, "caption.txt")); err != nil {
 		t.Fatalf("expected caption.txt in %s: %v", outDir, err)
